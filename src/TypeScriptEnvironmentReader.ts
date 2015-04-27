@@ -47,9 +47,10 @@ type QName = string[]
 /**
  * A type and its qualified name
  */
-interface QualifiedType {
+interface QualifiedDeclarationWithType {
     qName: QName
     type: ts.Type
+    kind: ts.SyntaxKind
 }
 /**
  * The serialized version of QualifiedType
@@ -115,7 +116,6 @@ enum TypeKind {
     Undefined,
     Null,
     Enum,
-    StringLiteral,
     TypeParameter,
     Class,
     Interface,
@@ -369,7 +369,7 @@ function makeSerializer(tc:ts.TypeChecker) {
 /**
  * Extracts all named declarations of a program and assigns qualified name to them.
  * @param program
- * @returns {QualifiedType[]}
+ * @returns {QualifiedDeclarationWithType[]}
  */
 function extractQualifiedDeclarations(program) {
     var QNameCache = new WeakMap<ts.Declaration,QName>();
@@ -433,18 +433,18 @@ function extractQualifiedDeclarations(program) {
         return qName;
     }
 
-    var moduleParts:QualifiedType[] = [];
+    var declarations:QualifiedDeclarationWithType[] = [];
     program.getSourceFiles().forEach(sourceFile => {
         var tc = program.getTypeChecker();
         sourceFile.getNamedDeclarations().forEach(decl => {
             switch (decl.kind) {
                 case ts.SyntaxKind.VariableDeclaration:
                 case ts.SyntaxKind.ClassDeclaration:
-                case ts.SyntaxKind.ModuleDeclaration:
                 case ts.SyntaxKind.FunctionDeclaration:
+                case ts.SyntaxKind.ModuleDeclaration:
                 case ts.SyntaxKind.InterfaceDeclaration:
                     var type:ts.Type = tc.getTypeAtLocation(decl);
-                    moduleParts.push({qName: getQName(decl), type: type});
+                    declarations.push({qName: getQName(decl), type: type, kind: decl.kind});
                     break;
                 default:
                 // ignore
@@ -452,7 +452,7 @@ function extractQualifiedDeclarations(program) {
 
         });
     });
-    return moduleParts;
+    return declarations;
 }
 /**
  * Analysis a typescript program
@@ -462,21 +462,21 @@ function analyzeProgram(program:ts.Program):AnalysisResult {
 
     var serializer = makeSerializer(program.getTypeChecker());
 
-    function serialize(decl:QualifiedType):QualifiedSerialization {
+    function serialize(decl:QualifiedDeclarationWithType):QualifiedSerialization {
         return {qName: decl.qName, type: serializer.serializeType(decl.type)};
     }
 
     var types = declarations.filter(
-            d => d.type.flags === ts.TypeFlags.Interface || d.type.flags === ts.TypeFlags.Class
+            d => d.kind === ts.SyntaxKind.InterfaceDeclaration || d.kind === ts.SyntaxKind.ClassDeclaration // pick some, it only matters client *usability* later
     ).map(serialize);
 
     var globalProperties = declarations.filter(
-            d => d.type.flags !== ts.TypeFlags.Interface && d.qName.length === 1 && d.qName[0][0] !== "'"
+            d => d.kind !== ts.SyntaxKind.InterfaceDeclaration && d.qName.length === 1 && d.qName[0][0] !== "'"
     ).map(serialize);
 
     /*var ambientModules = */
     declarations.filter(
-            d=>d.type.flags !== ts.TypeFlags.Interface && d.qName.length === 1 && d.qName[0][0] === "'"
+            d => d.kind !== ts.SyntaxKind.InterfaceDeclaration && d.qName.length === 1 && d.qName[0][0] === "'"
     ).map(serialize);
 
     function nest(flats:QualifiedSerialization[]):NestedSerialization {
