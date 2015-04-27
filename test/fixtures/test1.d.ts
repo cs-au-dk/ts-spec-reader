@@ -164,3 +164,5 @@ var objLit:{p: number};
 
 declare
 var dynPropObjLitVar:{'xy z': number};
+
+declare function f();
