@@ -11,7 +11,7 @@ import ts = require("typescript");
  * @returns AnalysisResult
  */
 export function readFiles(fileNames:string[]):AnalysisResult {
-    var program = ts.createProgram(fileNames, {module: ts.ModuleKind.CommonJS});
+    var program = ts.createProgram(fileNames, {module: ts.ModuleKind.CommonJS, noLib: true});
 
     var allDiagnostics = ts.getPreEmitDiagnostics(program);
 
