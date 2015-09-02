@@ -4,7 +4,9 @@ A Java deserializer has been implemented, ask @esbena.
 
 Example use:
 ```
-<< COMPILE THE TYPESCRIPT FILES IN PLACE >>
+$ npm i
+$ node_modules/.bin/tsc src/*.ts
+# bunch of type error warnings (need proper build script), but .js files will be created
 $ node src/CLI.js --help   
 
   Usage: CLI [options]
