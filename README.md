@@ -5,7 +5,7 @@ A Java deserializer has been implemented, ask @esbena.
 Example use:
 ```
 $ npm i
-$ node_modules/.bin/tsc src/*.ts
+$ node_modules/.bin/tsc --module commonjs src/*.ts
 # bunch of type error warnings (need proper build script), but .js files will be created
 $ node src/CLI.js --help   
 
@@ -19,7 +19,8 @@ $ node src/CLI.js --help
     -V, --version       output the version number
     --env <env>         Environment to read, one of: es5, es6, es5-dom, es6-dom
     -o --output <file>  The file to output to
-$ node src/CLI.js --env es5 -o test.json                        
+$ node src/CLI.js --env es5 -o test.json 
+Output written to test.json                       
 ```
 
 
