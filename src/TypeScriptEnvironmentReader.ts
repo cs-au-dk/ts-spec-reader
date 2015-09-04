@@ -127,7 +127,8 @@ enum TypeKind {
     Generic,
     Tuple,
     Union,
-    Anonymous
+    Anonymous,
+    Symbol
 }
 
 /**
@@ -284,6 +285,10 @@ function makeSerializer(tc:ts.TypeChecker) {
         };
     }
 
+    function makeSymbol():S.Type {
+        return {kind: TypeKind[TypeKind.Symbol]};
+    }
+
     function makeAnonymous():S.Type {
         return {kind: TypeKind[TypeKind.Anonymous]};
     }
@@ -358,6 +363,8 @@ function makeSerializer(tc:ts.TypeChecker) {
                     return makeAnonymous();
                 case ts.TypeFlags.Reference | ts.TypeFlags.Interface:
                     return makeGeneric(<ts.GenericType>type);
+                case ts.TypeFlags.ESSymbol:
+                    return makeSymbol();
                 case ts.TypeFlags.StringLiteral:
                 default:
                     throw new Error("Unhandled type case: " + type.flags);
