@@ -27,6 +27,7 @@ Output written to test.json
 ## Major TODOs
 - build script for the implementation (compile TypeScript)
 - CLI.ts should be able to take multiple files as arguments (implementation should support it)
+- Make Java API instead of a bunch of Java files that does not compile ( & add support for SymbolType)
 - @esbena: If I recall correctly, some of the handling generics are not completely implemented 
 - documentation
 - lobbying Microsoft to make this project obsolete: the TypeScript compiler should emit this by it self
