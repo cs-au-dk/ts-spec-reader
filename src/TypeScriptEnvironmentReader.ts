@@ -16,9 +16,13 @@ export function readFiles(fileNames:string[]):AnalysisResult {
     var allDiagnostics = ts.getPreEmitDiagnostics(program);
 
     allDiagnostics.forEach(diagnostic => {
-        var { line, character } = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
         var message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n');
-        console.warn(`TypeScript compiler :: ${diagnostic.file.fileName} (${line + 1},${character + 1}): ${message}`);
+        if (diagnostic.file) {
+            var { line, character } = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
+            console.warn(`TypeScript compiler :: ${diagnostic.file.fileName} (${line + 1},${character + 1}): ${message}`);
+        } else {
+            console.warn(`TypeScript compiler :: ${message}`);
+        }
     });
 
     return analyzeProgram(program);
@@ -217,19 +221,19 @@ function makeSerializer(tc:ts.TypeChecker) {
         };
     }
 
-    function makeInterface(type:ts.InterfaceType):S.InterfaceType {
-        function makeDeclaredProperties(properties:ts.Symbol[]):{[name:string]: S.SerializationID} {
-            var result:{[name:string]: S.SerializationID} = {};
-            properties.forEach(prop => {
-                var name = prop.getName();
-                result[name] = serializeType(tc.getTypeAtLocation(prop.getDeclarations()[0]));
-            });
-            return result;
-        }
+    function makeProperties(properties:ts.Symbol[]):{[name:string]: S.SerializationID} {
+        var result:{[name:string]: S.SerializationID} = {};
+        properties.forEach(prop => {
+            var name = prop.getName();
+            result[name] = serializeType(tc.getTypeAtLocation(prop.getDeclarations()[0]));
+        });
+        return result;
+    }
 
+    function makeInterface(type:ts.InterfaceType):S.InterfaceType {
         var typeParameters:S.SerializationID[] = type.typeParameters ? type.typeParameters.map(serializeType) : [];
         var baseTypes:S.SerializationID[] = type.baseTypes.map(serializeType);
-        var declaredProperties:{[name:string]: S.SerializationID} = makeDeclaredProperties(type.declaredProperties);
+        var declaredProperties:{[name:string]: S.SerializationID} = makeProperties(type.declaredProperties);
         var declaredCallSignatures:S.Signature[] = type.declaredCallSignatures.map(makeSignature);
         var declaredConstructSignatures:S.Signature[] = type.declaredConstructSignatures.map(makeSignature);
         var declaredStringIndexType = serializeType(type.declaredStringIndexType);
@@ -300,61 +304,66 @@ function makeSerializer(tc:ts.TypeChecker) {
 
         serializationCache.set(type, id);
 
-        var result:S.Type;
-        switch (type.flags) {
-            case ts.TypeFlags.Any:
-                result = makeAny();
-                break;
-            case ts.TypeFlags.String:
-                result = makeString();
-                break;
-            case ts.TypeFlags.Number:
-                result = makeNumber();
-                break;
-            case ts.TypeFlags.Boolean:
-                result = makeBoolean();
-                break;
-            case ts.TypeFlags.Void:
-                result = makeVoid();
-                break;
-            case ts.TypeFlags.Undefined:
-                result = makeUndefined();
-                break;
-            case ts.TypeFlags.Null:
-                result = makeNull();
-                break;
-            case ts.TypeFlags.Enum:
-                result = makeEnum();
-                break;
-            case ts.TypeFlags.TypeParameter:
-                result = makeTypeParameter(<ts.TypeParameter>type);
-                break;
-            case ts.TypeFlags.Class:
-                result = makeInterface /* yep! */(<ts.InterfaceType>type);
-                break;
-            case ts.TypeFlags.Interface:
-                result = makeInterface(<ts.InterfaceType>type);
-                break;
-            case ts.TypeFlags.Reference:
-                result = makeReference(<ts.TypeReference>type);
-                break;
-            case ts.TypeFlags.Tuple:
-                result = makeTuple(<ts.TupleType>type);
-                break;
-            case ts.TypeFlags.Union:
-                result = makeUnion(<ts.UnionType>type);
-                break;
-            case ts.TypeFlags.Anonymous:
-                result = makeAnonymous();
-                break;
-            case ts.TypeFlags.Reference | ts.TypeFlags.Interface:
-                result = makeGeneric(<ts.GenericType>type);
-                break;
-            case ts.TypeFlags.StringLiteral:
-            default:
-                throw new Error("Unhandled type case: " + type.flags);
+        function makeType(type: ts.Type): S.Type {
+            // XXX Need to execute this statement!
+            // This seems to force the type to be a "ResolvedType", it seems like an internal thing of the TypeChecker
+            // Perhaps this implementation should use more getters on the types and/or on the TypeChecker?
+            tc.getSignaturesOfType(type, 0);
 
+            switch (type.flags) {
+                case ts.TypeFlags.Any:
+                    return makeAny();
+                case ts.TypeFlags.String:
+                    return makeString();
+                case ts.TypeFlags.Number:
+                    return makeNumber();
+                case ts.TypeFlags.Boolean:
+                    return makeBoolean();
+                case ts.TypeFlags.Void:
+                    return makeVoid();
+                case ts.TypeFlags.Undefined:
+                    return makeUndefined();
+                case ts.TypeFlags.Null:
+                    return makeNull();
+                case ts.TypeFlags.Enum:
+                    return makeEnum();
+                case ts.TypeFlags.TypeParameter:
+                    return makeTypeParameter(<ts.TypeParameter>type);
+                case ts.TypeFlags.Class:
+                    return makeInterface /* yep! */(<ts.InterfaceType>type);
+                case ts.TypeFlags.Interface:
+                    return makeInterface(<ts.InterfaceType>type);
+                case ts.TypeFlags.Reference:
+                    return makeReference(<ts.TypeReference>type);
+                case ts.TypeFlags.Tuple:
+                    return makeTuple(<ts.TupleType>type);
+                case ts.TypeFlags.Union:
+                    return makeUnion(<ts.UnionType>type);
+                case ts.TypeFlags.Anonymous:
+                    // special case on anonymous: it can often be made into an InterfaceType!
+                    var symbol = type.getSymbol();
+                    if (symbol && symbol.valueDeclaration) {
+                        var rType: ts.ResolvedType = <ts.ResolvedType>type;
+                        return {
+                            kind: TypeKind[TypeKind.Interface],
+                            typeParameters: [],
+                            baseTypes: [],
+                            declaredProperties: rType.properties? makeProperties(rType.properties): {},
+                            declaredCallSignatures: rType.callSignatures.map(makeSignature),
+                            declaredConstructSignatures: rType.constructSignatures.map(makeSignature),
+                            declaredStringIndexType: serializeType(undefined),
+                            declaredNumberIndexType: serializeType(undefined)
+                        };
+                    }
+                    return makeAnonymous();
+                case ts.TypeFlags.Reference | ts.TypeFlags.Interface:
+                    return makeGeneric(<ts.GenericType>type);
+                case ts.TypeFlags.StringLiteral:
+                default:
+                    throw new Error("Unhandled type case: " + type.flags);
+            }
         }
+        var result = makeType(type);
         // console.log(result);
         serializations[id] = result;
         return id;
@@ -371,7 +380,7 @@ function makeSerializer(tc:ts.TypeChecker) {
  * @param program
  * @returns {QualifiedDeclarationWithType[]}
  */
-function extractQualifiedDeclarations(program) {
+function extractQualifiedDeclarations(program):QualifiedDeclarationWithType[] {
     var QNameCache = new WeakMap<ts.Declaration,QName>();
 
     function getNameIdentifierText(name:ts.DeclarationName) {
@@ -458,7 +467,7 @@ function extractQualifiedDeclarations(program) {
  * Analysis a typescript program
  */
 function analyzeProgram(program:ts.Program):AnalysisResult {
-    var declarations = extractQualifiedDeclarations(program);
+    var declarations:QualifiedDeclarationWithType[] = extractQualifiedDeclarations(program);
 
     var serializer = makeSerializer(program.getTypeChecker());
 
@@ -470,8 +479,9 @@ function analyzeProgram(program:ts.Program):AnalysisResult {
             d => d.kind === ts.SyntaxKind.InterfaceDeclaration || d.kind === ts.SyntaxKind.ClassDeclaration // pick some, it only matters client *usability* later
     ).map(serialize);
 
-    var globalProperties = declarations.filter(
-            d => d.kind !== ts.SyntaxKind.InterfaceDeclaration && d.qName.length === 1 && d.qName[0][0] !== "'"
+    var globalProperties = declarations.filter(d => {
+            return d.kind !== ts.SyntaxKind.InterfaceDeclaration && d.qName.length === 1 && d.qName[0][0] !== "'"
+        }
     ).map(serialize);
 
     /*var ambientModules = */
