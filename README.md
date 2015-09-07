@@ -34,3 +34,4 @@ Output written to test.json
   - has other projects surfaced?
   
   
+- Techical: Ghost modules (modules with only interfaces does not get instantiated as global variables...)
