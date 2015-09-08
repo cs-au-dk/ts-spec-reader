@@ -79,7 +79,7 @@ declare module S {
     interface Signature {
         /* declaration: */
         typeParameters: SerializationID[]
-        parameters: string[]
+        parameters: Parameter[]
         resolvedReturnType: SerializationID
         minArgumentCount: number
         hasRestParameter: boolean
@@ -105,6 +105,12 @@ declare module S {
         target: SerializationID
         typeArguments: SerializationID[]
     }
+
+    interface Parameter {
+        name: string
+        type: S.SerializationID
+    }
+
     interface Type {
         kind: string // TypeKind string
     }
@@ -211,7 +217,10 @@ function makeSerializer(tc:ts.TypeChecker) {
     function makeSignature(sig:ts.Signature):S.Signature {
         return {
             typeParameters: sig.typeParameters ? sig.typeParameters.map(serializeType) : [],
-            parameters: sig.parameters.map(sig => sig.getName()),
+            parameters: sig.parameters.map(parameter => ({
+                name: parameter.getName(),
+                type: serializeType(tc.getTypeAtLocation(parameter.valueDeclaration))
+            })),
             resolvedReturnType: serializeType(sig.resolvedReturnType),
             minArgumentCount: sig.minArgumentCount,
             hasRestParameter: sig.hasRestParameter,
