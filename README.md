@@ -32,6 +32,6 @@ Output written to test.json
 - documentation
 - lobbying Microsoft to make this project obsolete: the TypeScript compiler should emit this by it self
   - has other projects surfaced?
-  
+- most function parameters has types, but none has optionality  
   
 - Techical: Ghost modules (modules with only interfaces does not get instantiated as global variables...)
