@@ -375,6 +375,7 @@ function makeSerializer(tc:ts.TypeChecker) {
                 case ts.TypeFlags.ESSymbol:
                     return makeSymbol();
                 case ts.TypeFlags.StringLiteral:
+                    return makeString(); // TODO make string literal type
                 default:
                     throw new Error("Unhandled type case: " + type.flags);
             }
