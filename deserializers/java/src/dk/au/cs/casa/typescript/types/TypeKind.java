@@ -1,4 +1,4 @@
-package dk.brics.tajs.envspec.typescript.types;
+package dk.au.cs.casa.typescript.types;
 
 public enum TypeKind {
     Any,
@@ -16,5 +16,6 @@ public enum TypeKind {
     Generic,
     Tuple,
     Union,
+    Symbol,
     Anonymous
 }

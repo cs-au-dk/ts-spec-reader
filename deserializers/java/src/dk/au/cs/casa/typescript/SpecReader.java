@@ -1,35 +1,60 @@
-package dk.brics.tajs.envspec.typescript;
+package dk.au.cs.casa.typescript;
 
-import com.google.gson.*;
-import dk.brics.tajs.envspec.typescript.types.*;
-import dk.brics.tajs.options.Options;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import dk.au.cs.casa.typescript.types.AnonymousType;
+import dk.au.cs.casa.typescript.types.ClassType;
+import dk.au.cs.casa.typescript.types.GenericType;
+import dk.au.cs.casa.typescript.types.InterfaceType;
+import dk.au.cs.casa.typescript.types.ReferenceType;
+import dk.au.cs.casa.typescript.types.SimpleType;
+import dk.au.cs.casa.typescript.types.SymbolType;
+import dk.au.cs.casa.typescript.types.TupleType;
+import dk.au.cs.casa.typescript.types.Type;
+import dk.au.cs.casa.typescript.types.TypeKind;
+import dk.au.cs.casa.typescript.types.TypeParameterType;
+import dk.au.cs.casa.typescript.types.UnionType;
 
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-
-import static dk.brics.tajs.util.Collections.newList;
-import static dk.brics.tajs.util.Collections.newMap;
 
 public class SpecReader {
 
     private final Type global;
+
     private final TypeNameTree namedTypes;
 
-    public SpecReader() {
-        Spec spec = read();
-        this.namedTypes = spec.getTypes();
-        InterfaceType global = makeEmptySyntheticInterfaceType();
-        global.getDeclaredProperties().putAll(flattenTypeNameTree(spec.getGlobals()));
-        this.global = global;
-    }
-
-    public static void main(String[] args) {
-        SpecReader reader = new SpecReader();
-        Spec spec = reader.read();
-        System.out.println(spec);
+    /**
+     * Reads a specification from a file.
+     */
+    public SpecReader(Path specFile) {
+        GsonBuilder builder = new GsonBuilder();
+        TypeResolver typeResolver = new TypeResolver();
+        builder.registerTypeAdapter(Spec.class, new SpecAdapter(typeResolver));
+        builder.registerTypeAdapter(Type.class, new TypeIDAdapter(typeResolver));
+        builder.registerTypeAdapter(TypeNameTree.class, new TypeNameTreeAdapter(typeResolver));
+        Gson gson = builder.create();
+        try {
+            Spec spec = gson.fromJson(new FileReader(specFile.toFile()), Spec.class);
+            this.namedTypes = spec.getTypes();
+            InterfaceType global = makeEmptySyntheticInterfaceType();
+            global.getDeclaredProperties().putAll(flattenTypeNameTree(spec.getGlobals()));
+            this.global = global;
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -42,37 +67,12 @@ public class SpecReader {
         return map;
     }
 
-    public TypeNameTree getNamedTypes() {
-        return namedTypes;
-    }
-
-    private Spec read() {
-        GsonBuilder builder = new GsonBuilder();
-        TypeResolver typeResolver = new TypeResolver();
-        builder.registerTypeAdapter(Spec.class, new SpecAdapter(typeResolver));
-        builder.registerTypeAdapter(Type.class, new TypeIDAdapter(typeResolver));
-        builder.registerTypeAdapter(TypeNameTree.class, new TypeNameTreeAdapter(typeResolver));
-        Gson gson = builder.create();
-        try {
-            if(false) {
-                return gson.fromJson(new FileReader(Paths.get(Options.get().isDOMEnabled() ? "es5-dom.json" : "es5.json").toFile()), Spec.class);
-            }                                                                                                                                    else{
-                return gson.fromJson(new FileReader(Paths.get("/home/esbena/_data/TAJS-secondary/es5.json").toFile()), Spec.class);
-            }
-        } catch (FileNotFoundException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public Type getGlobal() {
-        return global;
-    }
-
     /**
      * Convinience method for creting synthetic instances of the InterfaceType.
      * Simplifies some implementation-cases.
      */
     public static InterfaceType makeEmptySyntheticInterfaceType() {
+
         InterfaceType interfaceType = new InterfaceType();
         interfaceType.setBaseTypes(newList());
         interfaceType.setDeclaredCallSignatures(newList());
@@ -84,18 +84,41 @@ public class SpecReader {
         return interfaceType;
     }
 
+    private static <K, V> Map<K, V> newMap() {
+
+        return new HashMap<>();
+    }
+
+    private static <T> List<T> newList() {
+
+        return new ArrayList<>();
+    }
+
+    public TypeNameTree getNamedTypes() {
+
+        return namedTypes;
+    }
+
+    public Type getGlobal() {
+
+        return global;
+    }
+
     private interface TypeNameTree {
 
     }
 
     private class TypeNameTreeAdapter implements JsonDeserializer<TypeNameTree> {
+
         private final TypeResolver resolver;
 
         private TypeNameTreeAdapter(TypeResolver resolver) {
+
             this.resolver = resolver;
         }
 
         private TypeNameTree deserialize(JsonElement jsonElement) {
+
             if (jsonElement.isJsonPrimitive()) {
                 return new Leaf(this.resolver.resolve(jsonElement.getAsInt()));
             }
@@ -110,6 +133,7 @@ public class SpecReader {
 
         @Override
         public TypeNameTree deserialize(JsonElement jsonElement, java.lang.reflect.Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
+
             return deserialize(jsonElement);
         }
     }
@@ -119,15 +143,19 @@ public class SpecReader {
         private final TypeResolver typeResolver;
 
         public SpecAdapter(TypeResolver typeResolver) {
+
             this.typeResolver = typeResolver;
         }
 
         @Override
         public Spec deserialize(JsonElement jsonElement, java.lang.reflect.Type type, JsonDeserializationContext ctx) throws JsonParseException {
+
             JsonObject jsonObject = jsonElement.getAsJsonObject();
             JsonArray data = jsonObject.get("data").getAsJsonArray();
             for (int id = 0; id < data.size(); id++) {
-                this.typeResolver.register(id, deserializeUnresolvedType(data.get(id), ctx));
+                JsonElement jsonElement1 = data.get(id);
+                Type deserializedType = deserializeUnresolvedType(jsonElement1, ctx);
+                this.typeResolver.register(id, deserializedType);
             }
             this.typeResolver.resolveAll();
             TypeNameTree globals = ctx.deserialize(jsonObject.get("globals"), TypeNameTree.class);
@@ -136,6 +164,7 @@ public class SpecReader {
         }
 
         private Type deserializeUnresolvedType(JsonElement jsonElement, JsonDeserializationContext ctx) {
+
             JsonObject object = jsonElement.getAsJsonObject();
             TypeKind kind = TypeKind.valueOf(object.get("kind").getAsString());
             switch (kind) {
@@ -164,6 +193,8 @@ public class SpecReader {
                     return ctx.deserialize(object, TupleType.class);
                 case Anonymous:
                     return ctx.deserialize(object, AnonymousType.class);
+                case Symbol:
+                    return ctx.deserialize(object, SymbolType.class);
                 default:
                     throw new RuntimeException("Unhandled case: " + kind);
             }
@@ -171,29 +202,36 @@ public class SpecReader {
     }
 
     private class TypeIDAdapter implements JsonDeserializer<Type> {
+
         private final TypeResolver resolver;
 
         private TypeIDAdapter(TypeResolver resolver) {
+
             this.resolver = resolver;
         }
 
         @Override
         public Type deserialize(JsonElement jsonElement, java.lang.reflect.Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
+
             return this.resolver.resolve(jsonElement.getAsInt());
         }
     }
 
     public class Spec {
+
         private TypeNameTree globals;
+
         private TypeNameTree types;
 
         public Spec(TypeNameTree globals, TypeNameTree types) {
+
             this.globals = globals;
             this.types = types;
         }
 
         @Override
         public String toString() {
+
             return "Spec{" +
                     "globals=" + globals +
                     ", types=" + types +
@@ -201,27 +239,33 @@ public class SpecReader {
         }
 
         public TypeNameTree getGlobals() {
+
             return globals;
         }
 
         public TypeNameTree getTypes() {
+
             return types;
         }
     }
 
     private class Leaf implements TypeNameTree {
+
         private final Type type;
 
         public Leaf(Type type) {
+
             this.type = type;
         }
 
         public Type getType() {
+
             return type;
         }
 
         @Override
         public String toString() {
+
             return "Leaf{" +
                     "type=" + type +
                     '}';
@@ -229,18 +273,22 @@ public class SpecReader {
     }
 
     private class Node implements TypeNameTree {
+
         private final Map<String, TypeNameTree> children;
 
         private Node(Map<String, TypeNameTree> children) {
+
             this.children = children;
         }
 
         public Map<String, TypeNameTree> getChildren() {
+
             return children;
         }
 
         @Override
         public String toString() {
+
             return "Node{" +
                     "children=" + children +
                     '}';

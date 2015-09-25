@@ -1,4 +1,4 @@
-package dk.brics.tajs.envspec.typescript.types;
+package dk.au.cs.casa.typescript.types;
 
 import java.util.List;
 import java.util.Map;
@@ -98,7 +98,7 @@ public class GenericType implements Type {
 
     @Override
     public String toString() {
-        return "Generic";
+        return "Generic(" + declaredProperties.keySet() + ")";
     }
 
     @Override

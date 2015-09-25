@@ -1,22 +1,22 @@
-package dk.brics.tajs.envspec.typescript.types;
+package dk.au.cs.casa.typescript.types;
 
 import java.util.List;
 
 public class UnionType implements Type {
-    private List<Type> types;
+    private List<Type> elements;
 
-    public List<Type> getTypes() {
-        return types;
+    public List<Type> getElements() {
+        return elements;
     }
 
-    public void setTypes(List<Type> types) {
-        this.types = types;
+    public void setElements(List<Type> types) {
+        this.elements = types;
     }
 
     @Override
     public String toString() {
         return "Union(" +
-                types +
+                elements +
                 ')';
     }
 

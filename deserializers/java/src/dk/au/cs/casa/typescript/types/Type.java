@@ -1,4 +1,4 @@
-package dk.brics.tajs.envspec.typescript.types;
+package dk.au.cs.casa.typescript.types;
 
 public interface Type {
     <T> T accept(TypeVisitor<T> v);

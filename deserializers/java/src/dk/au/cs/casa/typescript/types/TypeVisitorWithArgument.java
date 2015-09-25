@@ -1,4 +1,4 @@
-package dk.brics.tajs.envspec.typescript.types;
+package dk.au.cs.casa.typescript.types;
 
 public interface TypeVisitorWithArgument<T, A> {
     T visit(AnonymousType t, A a);
@@ -20,4 +20,6 @@ public interface TypeVisitorWithArgument<T, A> {
     T visit(UnresolvedType t, A a);
 
     T visit(TypeParameterType t, A a);
+
+    T visit(SymbolType t, A a);
 }

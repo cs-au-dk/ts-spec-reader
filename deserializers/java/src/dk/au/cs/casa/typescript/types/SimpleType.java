@@ -1,4 +1,4 @@
-package dk.brics.tajs.envspec.typescript.types;
+package dk.au.cs.casa.typescript.types;
 
 public class SimpleType implements Type {
     private final SimpleTypeKind kind;

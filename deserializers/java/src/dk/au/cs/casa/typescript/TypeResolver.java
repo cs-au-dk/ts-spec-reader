@@ -1,6 +1,6 @@
-package dk.brics.tajs.envspec.typescript;
+package dk.au.cs.casa.typescript;
 
-import dk.brics.tajs.envspec.typescript.types.*;
+import dk.au.cs.casa.typescript.types.*;
 
 import java.util.HashMap;
 import java.util.List;
@@ -40,7 +40,13 @@ class TypeResolver {
         }
         resolved = true;
         TypeVisitor<Void> v = new ResolverVisitor();
-        typeIdMap.values().forEach(t -> t.accept(v));
+        typeIdMap.entrySet().forEach(t -> {
+            try {
+                t.getValue().accept(v);
+            } catch (NullPointerException e) {
+                System.out.println("NullPointerException at id " + t.getKey() + " / type: " + t.getValue());
+            }
+        });
     }
 
     /**
@@ -80,7 +86,7 @@ class TypeResolver {
         }
 
         private void visit(List<Signature> signatures) {
-
+            signatures.forEach(sig -> sig.getParameters().forEach(p -> p.setType(map(p.getType()))));
         }
 
         private List<Type> map(List<Type> types) {
@@ -128,7 +134,7 @@ class TypeResolver {
 
         @Override
         public Void visit(UnionType t) {
-            t.setTypes(map(t.getTypes()));
+            t.setElements(map(t.getElements()));
             return null;
         }
 
@@ -141,6 +147,11 @@ class TypeResolver {
         public Void visit(TypeParameterType t) {
             t.setConstraint(map(t.getConstraint()));
             t.setTarget(map(t.getTarget()));
+            return null;
+        }
+
+        @Override
+        public Void visit(SymbolType t) {
             return null;
         }
     }

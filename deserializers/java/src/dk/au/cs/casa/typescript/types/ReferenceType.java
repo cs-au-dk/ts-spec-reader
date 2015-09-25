@@ -1,4 +1,4 @@
-package dk.brics.tajs.envspec.typescript.types;
+package dk.au.cs.casa.typescript.types;
 
 import java.util.List;
 
@@ -26,7 +26,7 @@ public class ReferenceType implements Type {
 
     @Override
     public String toString() {
-        return "Reference";
+        return "Reference("+ target +")";
     }
 
     @Override
