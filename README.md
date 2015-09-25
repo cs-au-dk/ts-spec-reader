@@ -23,11 +23,13 @@ $ node src/CLI.js --env es5 -o test.json
 Output written to test.json                       
 ```
 
+To deserialize the content of test.json to Java-objects, the [SpecReader](deserializers/java/src/dk/au/cs/casa/typescript/SpecReader.java) can be used.
+
+[deserializers/java/dist/ts-type-reader.jar](deserializers/java/dist/ts-type-reader.jar) contains a (probably) up-to-date jar-file with SpecReader.java and related clases.
 
 ## Major TODOs
 - build script for the implementation (compile TypeScript)
 - CLI.ts should be able to take multiple files as arguments (implementation should support it)
-- Make Java API instead of a bunch of Java files that does not compile ( & add support for SymbolType)
 - @esbena: If I recall correctly, some of the handling generics are not completely implemented 
 - documentation
 - lobbying Microsoft to make this project obsolete: the TypeScript compiler should emit this by it self
