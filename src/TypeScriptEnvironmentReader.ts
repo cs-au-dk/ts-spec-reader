@@ -354,9 +354,9 @@ function makeSerializer(tc:ts.TypeChecker) {
                 case ts.TypeFlags.Union:
                     return makeUnion(<ts.UnionType>type);
                 case ts.TypeFlags.Anonymous:
-                    // special case on anonymous: it can often be made into an InterfaceType!
-                    var symbol = type.getSymbol();
-                    if (symbol && symbol.valueDeclaration) {
+                    // XXX This is highly undocumented use of the typescript compiler API, but it seems to work out
+                    // Anonymous: can always be made into an InterfaceType!?!
+                    if (type.getConstructSignatures() || type.getCallSignatures() || type.getProperties() || type.getStringIndexType() || type.getNumberIndexType()) {
                         var rType: ts.ResolvedType = <ts.ResolvedType>type;
                         return {
                             kind: TypeKind[TypeKind.Interface],
@@ -365,8 +365,8 @@ function makeSerializer(tc:ts.TypeChecker) {
                             declaredProperties: rType.properties? makeProperties(rType.properties): {},
                             declaredCallSignatures: rType.callSignatures.map(makeSignature),
                             declaredConstructSignatures: rType.constructSignatures.map(makeSignature),
-                            declaredStringIndexType: serializeType(undefined),
-                            declaredNumberIndexType: serializeType(undefined)
+                            declaredStringIndexType: serializeType(rType.stringIndexType),
+                            declaredNumberIndexType: serializeType(rType.numberIndexType)
                         };
                     }
                     return makeAnonymous();
