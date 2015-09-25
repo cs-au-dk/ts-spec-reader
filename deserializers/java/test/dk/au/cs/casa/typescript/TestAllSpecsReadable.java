@@ -21,7 +21,7 @@ public class TestAllSpecsReadable {
             throw new RuntimeException(e);
         }
 
-        String[] cmd = new String[]{"/home/esbena/.nvm/versions/node/v0.12.7/bin/node", "--harmony", "/home/esbena/_data/ts-spec-reader/src/CLI.js", "--env", mode, "-o", jsonPath.toString()};
+        String[] cmd = new String[]{"/home/esbena/.nvm/versions/node/v0.12.7/bin/node", "--harmony", "/home/esbena/_data/ts-type-reader/src/CLI.js", "--env", mode, "-o", jsonPath.toString()};
         final ProcessBuilder pb = new ProcessBuilder(cmd);
         //pb.directory(Paths.get("../..").toFile());
         try {
