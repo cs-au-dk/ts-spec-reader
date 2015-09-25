@@ -54,6 +54,8 @@ switch (env) {
         process.exit(1);
 }
 
+console.log("Reading files: " + targets);
+
 var result = Reader.readFiles(targets);
 var json = JSON.stringify(result);
 if (program.output) {
