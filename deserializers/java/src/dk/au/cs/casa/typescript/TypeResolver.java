@@ -86,7 +86,12 @@ class TypeResolver {
         }
 
         private void visit(List<Signature> signatures) {
-            signatures.forEach(sig -> sig.getParameters().forEach(p -> p.setType(map(p.getType()))));
+            signatures.forEach(this::visit);
+        }
+
+        private void visit(Signature signature) {
+            signature.getParameters().forEach(p -> p.setType(map(p.getType())));
+            signature.setResolvedReturnType(map(signature.getResolvedReturnType()));
         }
 
         private List<Type> map(List<Type> types) {
