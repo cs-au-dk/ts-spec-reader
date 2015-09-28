@@ -21,8 +21,8 @@ import dk.au.cs.casa.typescript.types.TypeKind;
 import dk.au.cs.casa.typescript.types.TypeParameterType;
 import dk.au.cs.casa.typescript.types.UnionType;
 
-import java.io.FileNotFoundException;
-import java.io.FileReader;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -39,20 +39,14 @@ public class SpecReader {
      * Reads a specification from a file.
      */
     public SpecReader(Path specFile) {
-        GsonBuilder builder = new GsonBuilder();
-        TypeResolver typeResolver = new TypeResolver();
-        builder.registerTypeAdapter(Spec.class, new SpecAdapter(typeResolver));
-        builder.registerTypeAdapter(Type.class, new TypeIDAdapter(typeResolver));
-        builder.registerTypeAdapter(TypeNameTree.class, new TypeNameTreeAdapter(typeResolver));
-        Gson gson = builder.create();
+        this(pathToString(specFile));
+    }
+
+    private static String pathToString(Path specFile) {
         try {
-            Spec spec = gson.fromJson(new FileReader(specFile.toFile()), Spec.class);
-            this.namedTypes = spec.getTypes();
-            InterfaceType global = makeEmptySyntheticInterfaceType();
-            global.getDeclaredProperties().putAll(flattenTypeNameTree(spec.getGlobals()));
-            this.global = global;
-        } catch (FileNotFoundException e) {
-            throw new RuntimeException(e);
+            return new String(Files.readAllBytes(specFile));
+        } catch (IOException e) {
+            throw new RuntimeException();
         }
     }
 
