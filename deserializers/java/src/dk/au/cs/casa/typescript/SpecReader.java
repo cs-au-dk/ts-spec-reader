@@ -24,7 +24,6 @@ import dk.au.cs.casa.typescript.types.UnionType;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -55,6 +54,23 @@ public class SpecReader {
         } catch (FileNotFoundException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Reads a specification from a string.
+     */
+    public SpecReader(String specification) {
+        GsonBuilder builder = new GsonBuilder();
+        TypeResolver typeResolver = new TypeResolver();
+        builder.registerTypeAdapter(Spec.class, new SpecAdapter(typeResolver));
+        builder.registerTypeAdapter(Type.class, new TypeIDAdapter(typeResolver));
+        builder.registerTypeAdapter(TypeNameTree.class, new TypeNameTreeAdapter(typeResolver));
+        Gson gson = builder.create();
+        Spec spec = gson.fromJson(specification, Spec.class);
+        this.namedTypes = spec.getTypes();
+        InterfaceType global = makeEmptySyntheticInterfaceType();
+        global.getDeclaredProperties().putAll(flattenTypeNameTree(spec.getGlobals()));
+        this.global = global;
     }
 
     /**
@@ -104,7 +120,7 @@ public class SpecReader {
         return global;
     }
 
-    private interface TypeNameTree {
+    public interface TypeNameTree {
 
     }
 
@@ -249,7 +265,7 @@ public class SpecReader {
         }
     }
 
-    private class Leaf implements TypeNameTree {
+    public class Leaf implements TypeNameTree {
 
         private final Type type;
 
@@ -272,7 +288,7 @@ public class SpecReader {
         }
     }
 
-    private class Node implements TypeNameTree {
+    public class Node implements TypeNameTree {
 
         private final Map<String, TypeNameTree> children;
 
