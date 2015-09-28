@@ -22,6 +22,7 @@ import dk.au.cs.casa.typescript.types.TypeParameterType;
 import dk.au.cs.casa.typescript.types.UnionType;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -44,7 +45,7 @@ public class SpecReader {
 
     private static String pathToString(Path specFile) {
         try {
-            return new String(Files.readAllBytes(specFile));
+            return new String(Files.readAllBytes(specFile), Charset.forName("UTF-8"));
         } catch (IOException e) {
             throw new RuntimeException();
         }
