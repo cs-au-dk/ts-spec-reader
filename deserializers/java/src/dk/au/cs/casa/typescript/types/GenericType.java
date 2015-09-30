@@ -19,6 +19,23 @@ public class GenericType implements Type {
     private Type target;
     private List<Type> typeArguments;
 
+    /**
+     * Creates an interface-type, with all the information from the this generic type, just without the target and typeArguments.
+     *
+     * @return An interface, where the generic information is erased.
+     */
+    public InterfaceType toInterface() {
+        InterfaceType result = new InterfaceType();
+        result.setTypeParameters(this.getTypeParameters());
+        result.setBaseTypes(this.getBaseTypes());
+        result.setDeclaredProperties(this.getDeclaredProperties());
+        result.setDeclaredCallSignatures(this.getDeclaredCallSignatures());
+        result.setDeclaredConstructSignatures(this.getDeclaredConstructSignatures());
+        result.setDeclaredStringIndexType(this.getDeclaredStringIndexType());
+        result.setDeclaredNumberIndexType(this.getDeclaredNumberIndexType());
+        return result;
+    }
+
     public List<Type> getTypeParameters() {
         return typeParameters;
     }
