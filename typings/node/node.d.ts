@@ -123,6 +123,7 @@ declare module NodeJS {
     export interface ReadWriteStream extends ReadableStream, WritableStream {}
 
     export interface Process extends EventEmitter {
+    	binding(s: string): Process_binding_result;
         stdout: WritableStream;
         stderr: WritableStream;
         stdin: ReadableStream;
@@ -1453,4 +1454,10 @@ declare module "domain" {
     export function create(): Domain;
 }
 
+interface Process_binding_result {
+    setupBufferJS():void;
+    FSInitialize():void;
+    kMaxLength: number;
+}
 
+declare var Process_binding_result_var:Process_binding_result;
