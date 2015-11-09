@@ -123,7 +123,7 @@ declare module NodeJS {
     export interface ReadWriteStream extends ReadableStream, WritableStream {}
 
     export interface Process extends EventEmitter {
-    	binding(s: string): Process_binding_result;
+    	binding(s: string): nn_hack.Process_binding_result;
         stdout: WritableStream;
         stderr: WritableStream;
         stdin: ReadableStream;
@@ -637,6 +637,12 @@ declare module "readline" {
     export function createInterface(options: ReadLineOptions): ReadLine;
 }
 
+interface Context { }
+interface Script {
+    ();
+    runInThisContext(): void;
+    runInNewContext(sandbox?: Context): void;
+}
 declare module "vm" {
     export interface Context { }
     export interface Script {
@@ -648,6 +654,7 @@ declare module "vm" {
     export function runInContext(code: string, context: Context, filename?: string): void;
     export function createContext(initSandbox?: Context): Context;
     export function createScript(code: string, filename?: string): Script;
+    export var Script:Script;
 }
 
 declare module "child_process" {
@@ -1454,10 +1461,19 @@ declare module "domain" {
     export function create(): Domain;
 }
 
-interface Process_binding_result {
-    setupBufferJS():void;
-    FSInitialize():void;
-    kMaxLength: number;
+interface TimerWrap {
+    Start():void;
+    Stop(): void;
+    Now(): void;
 }
+declare module nn_hack {
 
-declare var Process_binding_result_var:Process_binding_result;
+    interface Process_binding_result {
+        setupBufferJS():void;
+        FSInitialize():void;
+        kMaxLength: number;
+        Timer: TimerWrap; // timer.js: process.binding('timer_wrap').Timer;
+        ContextifyScript: Script; // process.binding('contextify');
+    }
+}
+declare var Process_binding_result_var:nn_hack.Process_binding_result;
