@@ -15,7 +15,7 @@ var program = require('commander');
 
 program
     .version('0.1.0')
-    .usage("[options]")
+    .usage("[options] [file ...]")
     .description("Produces JSON for an environment described by TypeScript files.")
     .option("--env <env>", "Environment to read, one of: es5, es6, es5-dom, es6-dom", /^(es5|es6|es5-dom|es6-dom|node)$/)
     .option("-o --output <file>", "The file to output to")
@@ -53,6 +53,8 @@ switch (env) {
         console.error("Unhanleded env: %s", env);
         process.exit(1);
 }
+
+targets = targets.concat(program.args);
 
 console.log("Reading files: " + targets);
 
