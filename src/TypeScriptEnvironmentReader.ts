@@ -235,7 +235,10 @@ function makeSerializer(tc:ts.TypeChecker) {
         var result:{[name:string]: S.SerializationID} = {};
         properties.forEach(prop => {
             var name = prop.getName();
-            result[name] = serializeType(tc.getTypeAtLocation(prop.getDeclarations()[0]));
+            // XXX do we ignore some types by doing [0]???!
+            // (.parent is required for typeof expressions)
+            var declaration = (prop.getDeclarations() || prop.parent.getDeclarations())[0];
+            result[name] = serializeType(tc.getTypeAtLocation(declaration));
         });
         return result;
     }
