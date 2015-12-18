@@ -348,6 +348,8 @@ function makeSerializer(tc:ts.TypeChecker) {
                     return makeTypeParameter(<ts.TypeParameter>type);
                 case ts.TypeFlags.Class:
                     return makeInterface /* yep! */(<ts.InterfaceType>type);
+                case ts.TypeFlags.Class + ts.TypeFlags.Reference:
+                    return makeInterface /* yep! */(<ts.InterfaceType>type);
                 case ts.TypeFlags.Interface:
                     return makeInterface(<ts.InterfaceType>type);
                 case ts.TypeFlags.Reference:
