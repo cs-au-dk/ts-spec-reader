@@ -1497,6 +1497,9 @@ declare var Console: {
 
 declare var console: Console;
 
+interface http_parser_type {
+    methods: any[]
+}
 declare module nn_hack {
 
     interface Process_binding_result {
@@ -1505,7 +1508,11 @@ declare module nn_hack {
         kMaxLength: number;
         Timer: TimerWrap; // timer.js: process.binding('timer_wrap').Timer;
         ContextifyScript: Script; // process.binding('contextify');
-        HTTPParser:any; // process.binding('http') TODO: find the actual return type, and does the type have any effect on TAJS?
+        createFromString(s:string, encoding:string);
+
+        byteLengthUtf8():number;
+        byteLengthUtf8(s:string):number;
+        HTTPParser:http_parser_type; // process.binding('http') TODO: find the actual return type, and does the type have any effect on TAJS?
     }
 }
 declare var Process_binding_result_var:nn_hack.Process_binding_result;
