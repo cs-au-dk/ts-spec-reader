@@ -39,6 +39,14 @@ it("pixi test", function (done) {
     done();
 });
 
+it("pixi bug test", function (done) {
+    this.timeout(5000);
+    // Smoke test. Should not crash.
+    var result = Reader.readFiles(['typings/lib.d.ts', 'test/fixtures/pixi.js-bug.d.ts']);
+    JSON.stringify(result);
+    done();
+});
+
 it("array test", function (done) {
     this.timeout(5000);
     // Smoke test. Should not crash.
