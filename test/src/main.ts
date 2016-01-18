@@ -57,8 +57,8 @@ it("array test", function (done) {
 
 it("namespace test", function (done) {
     this.timeout(5000);
-    // Smoke test. Should not crash.
+    // Erik: "Gør at der bliver defineret en var Events på det globale object, og ikke under L.Mixin."
     var result = Reader.readFiles(['typings/lib.d.ts', 'test/fixtures/namespace.d.ts']);
     JSON.stringify(result);
-    done();
+    done(false);
 });
