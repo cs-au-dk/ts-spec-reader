@@ -54,3 +54,11 @@ it("array test", function (done) {
     JSON.stringify(result);
     done();
 });
+
+it("namespace test", function (done) {
+    this.timeout(5000);
+    // Smoke test. Should not crash.
+    var result = Reader.readFiles(['typings/lib.d.ts', 'test/fixtures/namespace.d.ts']);
+    JSON.stringify(result);
+    done();
+});
