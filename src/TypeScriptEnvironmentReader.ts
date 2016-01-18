@@ -3,7 +3,7 @@
 /// <reference path="../node_modules/typescript/bin/typescript.d.ts" />
 
 import ts = require("typescript");
-
+import util = require("util");
 /**
  * Reads typescript files and extracts the environment they describe.
  *
@@ -525,7 +525,8 @@ function analyzeProgram(program:ts.Program):AnalysisResult {
             }
             var nextParent = parent[head];
             if (typeof nextParent === 'number') {
-                throw new Error("Host is a leaf...");
+                console.log(parent);
+                throw new Error(util.format("Host is a leaf... (parent[%s] === %s)", head, nextParent));
             } else {
                 return getHost(nextParent, tail);
             }

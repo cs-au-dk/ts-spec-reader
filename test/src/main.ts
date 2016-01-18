@@ -30,3 +30,19 @@ it("Constructor typeof test", function (done) {
     JSON.stringify(result);
     done();
 });
+
+it("pixi test", function (done) {
+    this.timeout(5000);
+    // Smoke test. Should not crash.
+    var result = Reader.readFiles(['typings/lib.d.ts', 'test/fixtures/pixi.js.d.ts']);
+    JSON.stringify(result);
+    done();
+});
+
+it("array test", function (done) {
+    this.timeout(5000);
+    // Smoke test. Should not crash.
+    var result = Reader.readFiles(['typings/lib-core.d.ts', 'test/fixtures/array-types.d.ts']);
+    JSON.stringify(result);
+    done();
+});
