@@ -190,7 +190,7 @@ function makeSerializer(tc:ts.TypeChecker) {
     }
 
     function makeUnion(type:ts.UnionType):S.Type {
-        return makeUnionFromParts(type.types.map(serializeType));
+        return makeUnionFromParts(type.types.map((type) => serializeType(type)));
     }
 
     function makeUnionFromParts(parts:S.SerializationID[]):S.Type {
@@ -206,7 +206,7 @@ function makeSerializer(tc:ts.TypeChecker) {
 
     function makeReference(type:ts.TypeReference):S.ReferenceType {
         var target = serializeType(type.target);
-        var typeArguments:S.SerializationID[] = type.typeArguments.map(serializeType);
+        var typeArguments:S.SerializationID[] = type.typeArguments.map((type) => serializeType(type));
         return {
             kind: TypeKind[TypeKind.Reference],
             target: target,
@@ -214,9 +214,44 @@ function makeSerializer(tc:ts.TypeChecker) {
         };
     }
 
+    function makeConstructorSignature(returnType : S.SerializationID, typeArg:ts.TypeReference) : S.Signature {
+        var type = <any>typeArg;
+        return {
+            typeParameters: [],
+            parameters: type.parameters.map(function (parameter) {
+                return {
+                    name: parameter.name.text,
+                    type: serializeType(tc.getTypeAtLocation(parameter))
+                }
+            }),
+            resolvedReturnType: returnType,
+            minArgumentCount: type.parameters.length,
+            hasRestParameter: false,
+            hasStringLiterals: false,
+            target: undefined,
+            unionSignatures: [],
+            isolatedSignatureType: undefined
+        }
+    }
+
+    function makeEmptyConstructorSignature(returnType : S.SerializationID) : S.Signature {
+        return {
+            typeParameters: [],
+            parameters: [],
+            resolvedReturnType: returnType,
+            minArgumentCount: 0,
+            hasRestParameter: false,
+            hasStringLiterals: false,
+            target: undefined,
+            unionSignatures: [],
+            isolatedSignatureType: undefined
+        }
+    }
+
+
     function makeSignature(sig:ts.Signature):S.Signature {
         return {
-            typeParameters: sig.typeParameters ? sig.typeParameters.map(serializeType) : [],
+            typeParameters: sig.typeParameters ? sig.typeParameters.map((type) => serializeType(type)) : [],
             parameters: sig.parameters.map(parameter => ({
                 name: parameter.getName(),
                 type: serializeType(tc.getTypeAtLocation(parameter.valueDeclaration))
@@ -243,9 +278,36 @@ function makeSerializer(tc:ts.TypeChecker) {
         return result;
     }
 
+
+    function makeClass(typeArg : ts.InterfaceType):S.InterfaceType {
+        var type = <any>typeArg;
+        var instanceType = serializeType(type, makeInterface);
+        var constructor = type.members.__constructor;
+        var constructorSignatures = constructor ? constructor.declarations.map(makeConstructorSignature.bind(null, instanceType)) : [makeEmptyConstructorSignature(instanceType)];
+        var staticNames = Object.keys(type.symbol.exports);
+        staticNames.splice(staticNames.indexOf("prototype"), 1);
+        var staticProperties = {};
+        staticNames.forEach(function (name) {
+            var staticType = type.symbol.exports[name];
+            staticProperties[name] = serializeType(tc.getTypeAtLocation(staticType.valueDeclaration));
+        });
+        return <any>{ // Stop complaining!
+            kind: TypeKind[TypeKind.Interface],
+            typeParameters: [],
+            baseTypes: [],
+            declaredProperties: staticProperties,
+            declaredCallSignatures: [],
+            declaredConstructSignatures: constructorSignatures,
+            declaredStringIndexType: -1,
+            declaredNumberIndexType: -1
+        };
+
+    }
+
+
     function makeInterface(type:ts.InterfaceType):S.InterfaceType {
-        var typeParameters:S.SerializationID[] = type.typeParameters ? type.typeParameters.map(serializeType) : [];
-        var baseTypes:S.SerializationID[] = type.baseTypes.map(serializeType);
+        var typeParameters:S.SerializationID[] = type.typeParameters ? type.typeParameters.map((type) => serializeType(type)) : [];
+        var baseTypes:S.SerializationID[] = type.baseTypes.map((type) => serializeType(type));
         var declaredProperties:{[name:string]: S.SerializationID} = makeProperties(type.declaredProperties);
         var declaredCallSignatures:S.Signature[] = type.declaredCallSignatures.map(makeSignature);
         var declaredConstructSignatures:S.Signature[] = type.declaredConstructSignatures.map(makeSignature);
@@ -260,6 +322,23 @@ function makeSerializer(tc:ts.TypeChecker) {
             declaredConstructSignatures: declaredConstructSignatures,
             declaredStringIndexType: declaredStringIndexType,
             declaredNumberIndexType: declaredNumberIndexType
+        };
+    }
+
+    function makeGenericClass(type:ts.GenericType):S.Type {
+        var interfacePart = makeClass(type);
+        var referencePart = makeReference(type);
+        return {
+            kind: TypeKind[TypeKind.Generic],
+            typeParameters: interfacePart.typeParameters,
+            baseTypes: interfacePart.baseTypes,
+            declaredProperties: interfacePart.declaredProperties,
+            declaredCallSignatures: interfacePart.declaredCallSignatures,
+            declaredConstructSignatures: interfacePart.declaredConstructSignatures,
+            declaredStringIndexType: interfacePart.declaredStringIndexType,
+            declaredNumberIndexType: interfacePart.declaredNumberIndexType,
+            target: referencePart.target,
+            typeArguments: referencePart.typeArguments
         };
     }
 
@@ -308,20 +387,21 @@ function makeSerializer(tc:ts.TypeChecker) {
     /**
      * Serializes a type script type.
      * @param type as the type to serialize
+     * @param makeTypeArg a custom function that generates the type.
      * @returns the id of the serialize type
      */
-    function serializeType(type:ts.Type):S.SerializationID {
+    function serializeType(type:ts.Type, makeTypeArg?: (type: ts.Type) => S.Type):S.SerializationID {
         if (type === undefined) {
             return -1; // on purpose!
         }
-        if (serializationCache.has(type)) {
+        if (serializationCache.has(type) && typeof makeTypeArg !== "function") {
             return serializationCache.get(type);
         }
         var id = nextSerializationID++;
 
         serializationCache.set(type, id);
 
-        function makeType(type: ts.Type): S.Type {
+        var makeType = typeof makeTypeArg === "function" ? makeTypeArg : function (type) {
             // XXX Need to execute this statement!
             // This seems to force the type to be a "ResolvedType", it seems like an internal thing of the TypeChecker
             // Perhaps this implementation should use more getters on the types and/or on the TypeChecker?
@@ -347,9 +427,9 @@ function makeSerializer(tc:ts.TypeChecker) {
                 case ts.TypeFlags.TypeParameter:
                     return makeTypeParameter(<ts.TypeParameter>type);
                 case ts.TypeFlags.Class:
-                    return makeInterface /* yep! */(<ts.InterfaceType>type);
+                    return makeClass(<ts.InterfaceType>type);
                 case ts.TypeFlags.Class + ts.TypeFlags.Reference:
-                    return makeInterface /* yep! */(<ts.InterfaceType>type);
+                    return makeGenericClass(<ts.GenericType>type);
                 case ts.TypeFlags.Interface:
                     return makeInterface(<ts.InterfaceType>type);
                 case ts.TypeFlags.Reference:
