@@ -234,6 +234,20 @@ function makeSerializer(tc:ts.TypeChecker) {
         }
     }
 
+    function makeEmptyConstructorSignature(returnType : S.SerializationID) : S.Signature {
+        return {
+            typeParameters: [],
+            parameters: [],
+            resolvedReturnType: returnType,
+            minArgumentCount: 0,
+            hasRestParameter: false,
+            hasStringLiterals: false,
+            target: undefined,
+            unionSignatures: [],
+            isolatedSignatureType: undefined
+        }
+    }
+
 
     function makeSignature(sig:ts.Signature):S.Signature {
         return {
@@ -269,7 +283,7 @@ function makeSerializer(tc:ts.TypeChecker) {
         var type = <any>typeArg;
         var instanceType = serializeType(type, makeInterface);
         var constructor = type.members.__constructor;
-        var constructorSignatures = constructor ? constructor.declarations.map(makeConstructorSignature.bind(null, instanceType)) : [];
+        var constructorSignatures = constructor ? constructor.declarations.map(makeConstructorSignature.bind(null, instanceType)) : [makeEmptyConstructorSignature(instanceType)];
         var staticNames = Object.keys(type.symbol.exports);
         staticNames.splice(staticNames.indexOf("prototype"), 1);
         var staticProperties = {};
