@@ -394,7 +394,7 @@ function makeSerializer(tc:ts.TypeChecker) {
         if (type === undefined) {
             return -1; // on purpose!
         }
-        if (serializationCache.has(type)) {
+        if (serializationCache.has(type) && typeof makeTypeArg !== "function") {
             return serializationCache.get(type);
         }
         var id = nextSerializationID++;
