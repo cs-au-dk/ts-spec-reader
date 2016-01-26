@@ -6,6 +6,7 @@
 import ts = require("typescript");
 import Reader = require('../../src/TypeScriptEnvironmentReader')
 
+// TODO: tests should be refactored a bit to be proper mocha-style
 
 var libdts = "node_modules/typescript/bin/lib.d.ts";
 it("Should work", function (done) {
@@ -63,3 +64,29 @@ it("namespace test", function (done) {
     JSON.stringify(result);
     done(false);
 });
+
+it("class with constructor test", function (done) {
+    this.timeout(5000);
+    var result = Reader.readFiles([libdts, 'test/fixtures/class-with-construtor.d.ts']);
+    JSON.stringify(result);
+    var id = result.types["Klass"];
+    var element = <Reader.S.InterfaceType>result.data[<number>id];
+    assert(element.declaredConstructSignatures.length === 1);
+    done();
+});
+
+it("class with implicit constructor test", function (done) {
+    this.timeout(5000);
+    var result = Reader.readFiles([libdts, 'test/fixtures/class-with-implicit-constructor.d.ts']);
+    JSON.stringify(result);
+    var id = result.types["Klass"];
+    var element = <Reader.S.InterfaceType>result.data[<number>id];
+    assert(element.declaredConstructSignatures.length === 1);
+    done();
+});
+
+function assert(r:boolean) {
+    if (!r) {
+        throw new Error("Assertion error");
+    }
+}
