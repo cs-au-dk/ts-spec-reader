@@ -144,7 +144,7 @@ enum TypeKind {
 function makeSerializer(tc:ts.TypeChecker) {
 
     var serializationCache = new Map<ts.Type, S.SerializationID>();
-    var classInstanceMap : {[serializationId: number] : number}; // Map from the serializationId of the classType, to the serializationId of the instance type.
+    var classInstanceMap : {[serializationId: number] : number} = {}; // Map from the serializationId of the classType, to the serializationId of the instance type.
     var serializations = [];
     var nextSerializationID = 0;
     var primitives = {
@@ -302,12 +302,12 @@ function makeSerializer(tc:ts.TypeChecker) {
         });
 
         delayedOperations.push(function () {
-            var instanceType = serializations[instanceType];
-            for (var i = 0; i < instanceType.baseTypes.length; i++) {
-                var baseType = serializations[instanceType.baseTypes[i]];
+            var type = serializations[instanceType];
+            for (var i = 0; i < type.baseTypes.length; i++) {
+                var baseType = serializations[type.baseTypes[i]];
                 if (baseType.classType == "constructor") {
                     var constructor = baseType.declaredConstructSignatures[0];
-                    instanceType.baseTypes[i] = constructor.resolvedReturnType;
+                    type.baseTypes[i] = constructor.resolvedReturnType;
                 }
             }
         })
