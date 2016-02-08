@@ -606,7 +606,12 @@ function analyzeProgram(program:ts.Program):AnalysisResult {
     var serializer = makeSerializer(program.getTypeChecker());
 
     function serialize(decl:QualifiedDeclarationWithType):QualifiedSerialization {
-        return {qName: decl.qName, type: serializer.serializeType(decl.type)};
+        // TODO: TypeOf currently doesn't work here.
+        var expectConstructor = false;
+        if (decl.kind == 201) {
+            expectConstructor = true;
+        }
+        return {qName: decl.qName, type: serializer.serializeType(decl.type, null, expectConstructor)};
     }
 
     var types = declarations.filter(
