@@ -1513,6 +1513,7 @@ declare module nn_hack {
         byteLengthUtf8():number;
         byteLengthUtf8(s:string):number;
         HTTPParser:http_parser_type; // process.binding('http') TODO: find the actual return type, and does the type have any effect on TAJS?
+        isIP():boolean;
     }
 }
 declare var Process_binding_result_var:nn_hack.Process_binding_result;
