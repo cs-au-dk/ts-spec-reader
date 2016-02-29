@@ -1514,6 +1514,9 @@ declare module nn_hack {
         byteLengthUtf8(s:string):number;
         HTTPParser:http_parser_type; // process.binding('http') TODO: find the actual return type, and does the type have any effect on TAJS?
         isIP():boolean;
+        FSReqWrap():void;
+        open(x: any, y: any, w: any, z:any):any;
+        unlink(fid: any, req: any):any;
     }
 }
 declare var Process_binding_result_var:nn_hack.Process_binding_result;
