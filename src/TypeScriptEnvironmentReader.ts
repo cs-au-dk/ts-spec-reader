@@ -274,8 +274,8 @@ function makeSerializer(tc:ts.TypeChecker) {
             // XXX do we ignore some types by doing [0]???!
             // (.parent is required for typeof expressions)
             var declaration = (prop.getDeclarations() || prop.parent.getDeclarations())[0];
-            var isClassDeclaration = !(declaration.type);
-            var isTypeOf = !!(declaration.type && declaration.type.exprName);
+            var isClassDeclaration = !((<any>declaration).type);
+            var isTypeOf = !!((<any>declaration).type && (<any>declaration).type.exprName);
             result[name] = serializeType(tc.getTypeAtLocation(declaration), null, isClassDeclaration || isTypeOf);
         });
         return result;
@@ -287,7 +287,7 @@ function makeSerializer(tc:ts.TypeChecker) {
         var instanceType = nextSerializationID++;
         classInstanceMap[classId] = instanceType;
         serializeType(type, function (type) {
-            var result = makeInterface(<ts.InterfaceType>type);
+            var result : any = makeInterface(<ts.InterfaceType>type);
             result.classType = "instance";
             return result;
         }, false, instanceType);
@@ -486,7 +486,7 @@ function makeSerializer(tc:ts.TypeChecker) {
 
         var cacheKey = type;
         if (typeof makeTypeArg === "function") {
-            cacheKey = type.instanceCacheKey = type.instanceCacheKey || {};
+            cacheKey = (<any>type).instanceCacheKey = (<any>type).instanceCacheKey || {};
         }
         if (serializationCache.has(cacheKey)) {
             var resultingId = serializationCache.get(cacheKey);
