@@ -291,7 +291,7 @@ function makeSerializer(tc:ts.TypeChecker) {
             result.classType = "instance";
             return result;
         }, false, instanceType);
-        var constructor = type.members.__constructor;
+        var constructor = type.members.__constructor || type.symbol.members.__constructor;
         var constructorSignatures = constructor ? constructor.declarations.map(makeConstructorSignature.bind(null, instanceType)) : [makeEmptyConstructorSignature(instanceType)];
         var staticNames = Object.keys(type.symbol.exports);
         staticNames.splice(staticNames.indexOf("prototype"), 1);
