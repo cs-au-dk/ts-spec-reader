@@ -73,7 +73,7 @@ interface NestedSerialization {
 /**
  * Misc. types for serialization
  */
-declare module S {
+export declare module S {
     type SerializationID = number;
 
     interface Signature {
