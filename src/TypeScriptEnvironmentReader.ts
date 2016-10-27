@@ -1,6 +1,6 @@
 /// <reference path="../typings/node/node.d.ts" />
-/// <reference path="../node_modules/typescript/bin/lib.es6.d.ts" />
-/// <reference path="../node_modules/typescript/bin/typescript.d.ts" />
+/// <reference path="../node_modules/typescript/lib/lib.es6.d.ts" />
+/// <reference path="../node_modules/typescript/lib/typescript.d.ts" />
 
 import ts = require("typescript");
 import util = require("util");
@@ -207,7 +207,7 @@ function makeSerializer(tc:ts.TypeChecker) {
 
     function makeReference(type:ts.TypeReference):S.ReferenceType {
         var target = serializeType(type.target);
-        var typeArguments:S.SerializationID[] = type.typeArguments.map((type) => serializeType(type));
+        var typeArguments:S.SerializationID[] = type.typeArguments ? type.typeArguments.map((type) => serializeType(type)) : [];
         return {
             kind: TypeKind[TypeKind.Reference],
             target: target,
@@ -330,7 +330,7 @@ function makeSerializer(tc:ts.TypeChecker) {
 
     function makeInterface(type:ts.InterfaceType):S.InterfaceType {
         var typeParameters:S.SerializationID[] = type.typeParameters ? type.typeParameters.map((type) => serializeType(type)) : [];
-        var baseTypes:S.SerializationID[] = type.baseTypes.map((type) => serializeType(type));
+        var baseTypes:S.SerializationID[] = type.resolvedBaseTypes.map((type) => serializeType(type));
         var declaredProperties:{[name:string]: S.SerializationID} = makeProperties(type.declaredProperties);
         var declaredCallSignatures:S.Signature[] = type.declaredCallSignatures.map(makeSignature);
         var declaredConstructSignatures:S.Signature[] = type.declaredConstructSignatures.map(makeSignature);
@@ -433,6 +433,7 @@ function makeSerializer(tc:ts.TypeChecker) {
                 case ts.TypeFlags.Number:
                     return makeNumber();
                 case ts.TypeFlags.Boolean:
+                case ts.TypeFlags.Boolean | ts.TypeFlags.Union: // No idea why it happens, but it does (and from what I've seen, it is just a boolean).
                     return makeBoolean();
                 case ts.TypeFlags.Void:
                     return makeVoid();
@@ -477,8 +478,15 @@ function makeSerializer(tc:ts.TypeChecker) {
                     return makeGeneric(<ts.GenericType>type);
                 case ts.TypeFlags.ESSymbol:
                     return makeSymbol();
+                // TODO: Make litterals:
                 case ts.TypeFlags.StringLiteral:
-                    return makeString(); // TODO make string literal type
+                    return makeString();
+                case ts.TypeFlags.BooleanLiteral:
+                    return makeBoolean();
+                case ts.TypeFlags.ThisType | ts.TypeFlags.TypeParameter:
+                    return makeAnonymous(); // TODO:
+                case ts.TypeFlags.Never:
+                    return makeAnonymous(); // TODO:
                 default:
                     throw new Error("Unhandled type case: " + type.flags);
             }
@@ -512,7 +520,7 @@ function makeSerializer(tc:ts.TypeChecker) {
  * @param program
  * @returns {QualifiedDeclarationWithType[]}
  */
-function extractQualifiedDeclarations(program):QualifiedDeclarationWithType[] {
+function extractQualifiedDeclarations(program: ts.Program):QualifiedDeclarationWithType[] {
     var QNameCache = new WeakMap<ts.Declaration,QName>();
 
     function getNameIdentifierText(name:ts.DeclarationName) {
@@ -577,22 +585,25 @@ function extractQualifiedDeclarations(program):QualifiedDeclarationWithType[] {
     var declarations:QualifiedDeclarationWithType[] = [];
     program.getSourceFiles().forEach(sourceFile => {
         var tc = program.getTypeChecker();
-        sourceFile.getNamedDeclarations().forEach(decl => {
-            switch (decl.kind) {
-                case ts.SyntaxKind.VariableDeclaration:
-                case ts.SyntaxKind.ClassDeclaration:
-                case ts.SyntaxKind.FunctionDeclaration:
-                case ts.SyntaxKind.ModuleDeclaration:
-                case ts.SyntaxKind.InterfaceDeclaration:
-                    var type:ts.Type = tc.getTypeAtLocation(decl);
-                    declarations.push({qName: getQName(decl), type: type, kind: decl.kind});
-                    break;
-                default:
-                // ignore
-            }
+        var namedDeclarations = sourceFile.getNamedDeclarations();
+        for (var name in namedDeclarations) {
+            namedDeclarations[name].forEach(decl => {
+                switch (decl.kind) {
+                    case ts.SyntaxKind.VariableDeclaration:
+                    case ts.SyntaxKind.ClassDeclaration:
+                    case ts.SyntaxKind.FunctionDeclaration:
+                    case ts.SyntaxKind.ModuleDeclaration:
+                    case ts.SyntaxKind.InterfaceDeclaration:
+                        var type:ts.Type = tc.getTypeAtLocation(decl);
+                        declarations.push({qName: getQName(decl), type: type, kind: decl.kind});
+                        break;
+                    default:
+                    // ignore
+                }
 
-        });
-    });
+            });
+        }
+    })
     return declarations;
 }
 
