@@ -384,11 +384,11 @@ function makeSerializer(tc:ts.TypeChecker) {
         };
     }
 
-    function makeTuple(type:ts.TupleType):S.Type {
+    // In TypeScript 2, a tuple is an array of type parameters. Meaning that any tuple of the same length can share type, they just have different parameters.
+    function makeTuple(type:ts.GenericType):S.Type {
         return {
             kind: TypeKind[TypeKind.Tuple],
-            elementTypes: type.elementTypes.map(e => serializeType(e)),
-            baseArrayType: serializeType(type.baseArrayType)
+            elementTypes: type.typeParameters.map(e => serializeType(e))
         }
     }
 
@@ -414,11 +414,9 @@ function makeSerializer(tc:ts.TypeChecker) {
      * @param type as the type to serialize
      * @param makeTypeArg a custom function that generates the type.
      * @param expectingClassConstructor true if serialize type is expected to return an constructor for the class, and not the instance.
-     * @param explicitNextSerializationId If the serializationId has already been computed, it can be given here.
      * @returns the id of the serialize type
      */
-    // TODO: No neewd for explicitNextSerializationId?
-    function serializeType(type:ts.Type, makeTypeArg?: (type: ts.Type) => S.Type, expectingClassConstructor = false, explicitNextSerializationId? : number):S.SerializationID {
+    function serializeType(type:ts.Type, makeTypeArg?: (type: ts.Type) => S.Type, expectingClassConstructor = false):S.SerializationID {
         if (type === undefined) {
             return -1; // on purpose!
         }
@@ -426,7 +424,11 @@ function makeSerializer(tc:ts.TypeChecker) {
             // XXX Need to execute this statement!
             // This seems to force the type to be a "ResolvedType", it seems like an internal thing of the TypeChecker
             // Perhaps this implementation should use more getters on the types and/or on the TypeChecker?
-            tc.getSignaturesOfType(type, 0);
+            try {
+                tc.getSignaturesOfType(type, 0);
+            } catch (e) {
+                // Do nothing.
+            }
 
             switch (type.flags) {
                 case ts.TypeFlags.Any:
@@ -456,8 +458,8 @@ function makeSerializer(tc:ts.TypeChecker) {
                     return makeInterface(<ts.InterfaceType>type);
                 case ts.TypeFlags.Reference:
                     return makeReference(<ts.TypeReference>type);
-                case ts.TypeFlags.Tuple:
-                    return makeTuple(<ts.TupleType>type);
+                case ts.TypeFlags.Tuple + ts.TypeFlags.Reference:
+                    return makeTuple(<ts.GenericType>type);
                 case ts.TypeFlags.Union:
                     return makeUnion(<ts.UnionType>type);
                 case ts.TypeFlags.Anonymous:
@@ -503,10 +505,10 @@ function makeSerializer(tc:ts.TypeChecker) {
             var resultingId = serializationCache.get(cacheKey);
             if (ts.TypeFlags.Class + ts.TypeFlags.Reference == type.flags && !expectingClassConstructor) {
                 return classInstanceMap[resultingId] || (classInstanceMap[resultingId] = nextSerializationID++);
-            } // From here.
+            }
             return resultingId;
         }
-        var id = explicitNextSerializationId || nextSerializationID++;
+        var id = nextSerializationID++;
         serializationCache.set(cacheKey, id);
         serializations[id] = makeType(type, id);
 

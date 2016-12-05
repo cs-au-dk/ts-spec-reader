@@ -141,7 +141,6 @@ class TypeResolver {
 
         @Override
         public Void visit(TupleType t) {
-            t.setBaseArrayType(map(t.getBaseArrayType()));
             t.setElementTypes(map(t.getElementTypes()));
             return null;
         }

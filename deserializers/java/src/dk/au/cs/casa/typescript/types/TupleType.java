@@ -4,7 +4,6 @@ import java.util.List;
 
 public class TupleType implements Type {
     private List<Type> elementTypes;
-    private Type baseArrayType;
 
     @Override
     public <T> T accept(TypeVisitor<T> v) {
@@ -29,13 +28,5 @@ public class TupleType implements Type {
 
     public void setElementTypes(List<Type> elementTypes) {
         this.elementTypes = elementTypes;
-    }
-
-    public Type getBaseArrayType() {
-        return baseArrayType;
-    }
-
-    public void setBaseArrayType(Type baseArrayType) {
-        this.baseArrayType = baseArrayType;
     }
 }
