@@ -164,6 +164,16 @@ class TypeResolver {
         }
 
         @Override
+        public Void visit(NeverType t) {
+            return null;
+        }
+
+        @Override
+        public Void visit(ThisType t) {
+            return null;
+        }
+
+        @Override
         public Void visit(UnresolvedType t) {
             throw new RuntimeException("Should not occur here!?");
         }

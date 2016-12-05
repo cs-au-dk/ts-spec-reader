@@ -202,6 +202,10 @@ public class SpecReader {
                     return ctx.deserialize(object, TupleType.class);
                 case Anonymous:
                     return ctx.deserialize(object, AnonymousType.class);
+                case Never:
+                    return ctx.deserialize(object, NeverType.class);
+                case ThisType:
+                    return ctx.deserialize(object, ThisType.class);
                 case Symbol:
                     return ctx.deserialize(object, SymbolType.class);
                 default:

@@ -32,4 +32,8 @@ public interface TypeVisitorWithArgument<T, A> {
     T visit(IntersectionType t, A a);
 
     T visit(ClassInstanceType t, A a);
+
+    T visit(NeverType t, A a);
+
+    T visit(ThisType t, A a);
 }

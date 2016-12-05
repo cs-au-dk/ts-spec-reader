@@ -22,5 +22,7 @@ public enum TypeKind {
     Union,
     Intersection,
     Symbol,
+    Never,
+    ThisType,
     Anonymous
 }

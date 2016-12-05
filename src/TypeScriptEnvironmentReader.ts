@@ -139,6 +139,8 @@ enum TypeKind {
     Union,
     Intersection,
     Anonymous,
+    Never,
+    ThisType,
     Symbol
 }
 
@@ -299,7 +301,7 @@ function makeSerializer(tc:ts.TypeChecker) {
             var declaration = (prop.getDeclarations() || prop.parent.getDeclarations())[0];
             var isClassDeclaration = !((<any>declaration).type);
             var isTypeOf = !!((<any>declaration).type && (<any>declaration).type.exprName);
-            result[name] = serializeType(tc.getTypeAtLocation(declaration), null, isClassDeclaration || isTypeOf);
+            result[name] = serializeType(tc.getTypeAtLocation(declaration), isClassDeclaration || isTypeOf);
         });
         return result;
     }
@@ -329,7 +331,7 @@ function makeSerializer(tc:ts.TypeChecker) {
 
         const instanceProperties:{[name:string]: S.SerializationID} = makeProperties(type.declaredProperties);
 
-        const baseTypes:S.SerializationID[] = type.resolvedBaseTypes.map((type) => serializeType(type));
+        const baseTypes:S.SerializationID[] = type.resolvedBaseTypes.map((type) => serializeType(type, true));
 
         const typeParameters:S.SerializationID[] = type.typeParameters ? type.typeParameters.map((type) => serializeType(type)) : [];
 
@@ -412,15 +414,14 @@ function makeSerializer(tc:ts.TypeChecker) {
     /**
      * Serializes a type script type.
      * @param type as the type to serialize
-     * @param makeTypeArg a custom function that generates the type.
      * @param expectingClassConstructor true if serialize type is expected to return an constructor for the class, and not the instance.
      * @returns the id of the serialize type
      */
-    function serializeType(type:ts.Type, makeTypeArg?: (type: ts.Type) => S.Type, expectingClassConstructor = false):S.SerializationID {
+    function serializeType(type:ts.Type, expectingClassConstructor = false):S.SerializationID {
         if (type === undefined) {
             return -1; // on purpose!
         }
-        var makeType = typeof makeTypeArg === "function" ? makeTypeArg : function (type, id) {
+        var makeType = function (type, id) {
             // XXX Need to execute this statement!
             // This seems to force the type to be a "ResolvedType", it seems like an internal thing of the TypeChecker
             // Perhaps this implementation should use more getters on the types and/or on the TypeChecker?
@@ -490,9 +491,9 @@ function makeSerializer(tc:ts.TypeChecker) {
                 case ts.TypeFlags.NumberLiteral:
                     return makeNumberLiteral(type);
                 case ts.TypeFlags.ThisType | ts.TypeFlags.TypeParameter:
-                    return makeAnonymous(); // TODO:
+                    return {kind: TypeKind[TypeKind.ThisType]};
                 case ts.TypeFlags.Never:
-                    return makeAnonymous(); // TODO:
+                    return {kind: TypeKind[TypeKind.Never]};
                 case ts.TypeFlags.Intersection:
                     return makeIntersection(type);
                 default:

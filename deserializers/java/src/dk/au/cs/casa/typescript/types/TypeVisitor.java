@@ -32,4 +32,8 @@ public interface TypeVisitor<T> {
     T visit(IntersectionType t);
 
     T visit(ClassInstanceType t);
+
+    T visit(NeverType t);
+
+    T visit(ThisType t);
 }
