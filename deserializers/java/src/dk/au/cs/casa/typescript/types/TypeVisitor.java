@@ -22,4 +22,14 @@ public interface TypeVisitor<T> {
     T visit(TypeParameterType t);
 
     T visit(SymbolType t);
+
+    T visit(StringLiteral t);
+
+    T visit(BooleanLiteral t);
+
+    T visit(NumberLiteral t);
+
+    T visit(IntersectionType t);
+
+    T visit(ClassInstanceType t);
 }

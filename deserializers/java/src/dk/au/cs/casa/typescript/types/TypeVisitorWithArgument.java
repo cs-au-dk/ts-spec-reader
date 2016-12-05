@@ -22,4 +22,14 @@ public interface TypeVisitorWithArgument<T, A> {
     T visit(TypeParameterType t, A a);
 
     T visit(SymbolType t, A a);
+
+    T visit(StringLiteral t, A a);
+
+    T visit(BooleanLiteral t, A a);
+
+    T visit(NumberLiteral t, A a);
+
+    T visit(IntersectionType t, A a);
+
+    T visit(ClassInstanceType t, A a);
 }

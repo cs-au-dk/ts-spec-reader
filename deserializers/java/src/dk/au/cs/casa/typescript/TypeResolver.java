@@ -61,6 +61,15 @@ class TypeResolver {
 
         @Override
         public Void visit(ClassType t) {
+            visit(t.getSignatures());
+            t.setBaseTypes(map(t.getBaseTypes()));
+            t.setInstanceProperties(mapMap(t.getInstanceProperties()));
+            t.setStaticProperties(mapMap(t.getStaticProperties()));
+            t.setDeclaredNumberIndexType(map(t.getDeclaredNumberIndexType()));
+            t.setDeclaredStringIndexType(map(t.getDeclaredStringIndexType()));
+            t.setTarget(map(t.getTarget()));
+            t.setTypeArguments(map(t.getTypeArguments()));
+            t.setTypeParameters(map(t.getTypeParameters()));
             return null;
         }
 
@@ -144,6 +153,18 @@ class TypeResolver {
         }
 
         @Override
+        public Void visit(IntersectionType t) {
+            t.setElements(map(t.getElements()));
+            return null;
+        }
+
+        @Override
+        public Void visit(ClassInstanceType t) {
+            t.setClassType(map(t.getClassType()));
+            return null;
+        }
+
+        @Override
         public Void visit(UnresolvedType t) {
             throw new RuntimeException("Should not occur here!?");
         }
@@ -157,6 +178,21 @@ class TypeResolver {
 
         @Override
         public Void visit(SymbolType t) {
+            return null;
+        }
+
+        @Override
+        public Void visit(StringLiteral t) {
+            return null;
+        }
+
+        @Override
+        public Void visit(BooleanLiteral t) {
+            return null;
+        }
+
+        @Override
+        public Void visit(NumberLiteral t) {
             return null;
         }
     }

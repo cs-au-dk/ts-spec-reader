@@ -8,18 +8,7 @@ import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
-import dk.au.cs.casa.typescript.types.AnonymousType;
-import dk.au.cs.casa.typescript.types.ClassType;
-import dk.au.cs.casa.typescript.types.GenericType;
-import dk.au.cs.casa.typescript.types.InterfaceType;
-import dk.au.cs.casa.typescript.types.ReferenceType;
-import dk.au.cs.casa.typescript.types.SimpleType;
-import dk.au.cs.casa.typescript.types.SymbolType;
-import dk.au.cs.casa.typescript.types.TupleType;
-import dk.au.cs.casa.typescript.types.Type;
-import dk.au.cs.casa.typescript.types.TypeKind;
-import dk.au.cs.casa.typescript.types.TypeParameterType;
-import dk.au.cs.casa.typescript.types.UnionType;
+import dk.au.cs.casa.typescript.types.*;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -154,7 +143,6 @@ public class SpecReader {
         private final TypeResolver typeResolver;
 
         public SpecAdapter(TypeResolver typeResolver) {
-
             this.typeResolver = typeResolver;
         }
 
@@ -188,14 +176,24 @@ public class SpecReader {
                 case Null:
                 case Enum:
                     return ctx.deserialize(object, SimpleType.class);
+                case StringLiteral:
+                    return ctx.deserialize(object, StringLiteral.class);
+                case BooleanLiteral:
+                    return ctx.deserialize(object, BooleanLiteral.class);
+                case NumberLiteral:
+                    return ctx.deserialize(object, NumberLiteral.class);
                 case Union:
                     return ctx.deserialize(object, UnionType.class);
+                case Intersection:
+                    return ctx.deserialize(object, IntersectionType.class);
                 case Interface:
                     return ctx.deserialize(object, InterfaceType.class);
                 case TypeParameter:
                     return ctx.deserialize(object, TypeParameterType.class);
                 case Class:
                     return ctx.deserialize(object, ClassType.class);
+                case ClassInstance:
+                    return ctx.deserialize(object, ClassInstanceType.class);
                 case Reference:
                     return ctx.deserialize(object, ReferenceType.class);
                 case Generic:
