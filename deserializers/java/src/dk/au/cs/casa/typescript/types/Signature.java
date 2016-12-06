@@ -8,7 +8,6 @@ public class Signature {
     private Type resolvedReturnType;
     private int minArgumentCount;
     private boolean hasRestParameter;
-    private boolean hasStringLiterals;
     private Signature target;
     /* mapper */
     private List<Signature> unionSignatures;
@@ -61,14 +60,6 @@ public class Signature {
 
     public void setHasRestParameter(boolean hasRestParameter) {
         this.hasRestParameter = hasRestParameter;
-    }
-
-    public boolean isHasStringLiterals() {
-        return hasStringLiterals;
-    }
-
-    public void setHasStringLiterals(boolean hasStringLiterals) {
-        this.hasStringLiterals = hasStringLiterals;
     }
 
     public Signature getTarget() {

@@ -83,7 +83,6 @@ export declare module S {
         resolvedReturnType: SerializationID
         minArgumentCount: number
         hasRestParameter: boolean
-        hasStringLiterals: boolean
         target: Signature
         /* mapper */
         unionSignatures: Signature[]
@@ -109,6 +108,9 @@ export declare module S {
     interface Parameter {
         name: string
         type: S.SerializationID
+    }
+    interface UnionType extends Type {
+        elements: S.SerializationID[]
     }
 
     interface Type {
@@ -215,19 +217,19 @@ function makeSerializer(tc:ts.TypeChecker) {
             }
         });
 
-        return {kind: TypeKind[kind], elements: elements};
+        return <any>{kind: TypeKind[kind], elements: elements};
     }
 
     function makeStringLiteral(type):S.Type {
-        return {kind: TypeKind[TypeKind.StringLiteral], text: type.text};
+        return <any>{kind: TypeKind[TypeKind.StringLiteral], text: type.text};
     }
 
     function makeBooleanLiteral(type):S.Type {
-        return {kind: TypeKind[TypeKind.BooleanLiteral], value: type.intrinsicName == "true"};
+        return <any>{kind: TypeKind[TypeKind.BooleanLiteral], value: type.intrinsicName == "true"};
     }
 
     function makeNumberLiteral(type):S.Type {
-        return {kind: TypeKind[TypeKind.NumberLiteral], value: Number(type.text)};
+        return <any>{kind: TypeKind[TypeKind.NumberLiteral], value: Number(type.text)};
     }
 
     function makeReference(type:ts.TypeReference):S.ReferenceType {
@@ -242,7 +244,7 @@ function makeSerializer(tc:ts.TypeChecker) {
 
     function makeConstructorSignature(returnType : S.SerializationID, typeArg:ts.TypeReference) : S.Signature {
         var type = <any>typeArg;
-        return {
+        return <any>{
             typeParameters: [],
             parameters: type.parameters.map(function (parameter) {
                 return {
@@ -261,7 +263,7 @@ function makeSerializer(tc:ts.TypeChecker) {
     }
 
     function makeEmptyConstructorSignature(returnType : S.SerializationID) : S.Signature {
-        return {
+        return <any>{
             typeParameters: [],
             parameters: [],
             resolvedReturnType: returnType,
@@ -282,13 +284,14 @@ function makeSerializer(tc:ts.TypeChecker) {
                 name: parameter.getName(),
                 type: serializeType(tc.getTypeAtLocation(parameter.valueDeclaration))
             })),
-            resolvedReturnType: serializeType(sig.resolvedReturnType),
-            minArgumentCount: sig.minArgumentCount,
-            hasRestParameter: sig.hasRestParameter,
-            hasStringLiterals: sig.hasStringLiterals,
-            target: sig.target ? makeSignature(sig.target) : undefined,
-            unionSignatures: sig.unionSignatures ? sig.unionSignatures.map(makeSignature) : [],
-            isolatedSignatureType: sig.isolatedSignatureType ? serializeType(sig.isolatedSignatureType) : undefined
+            // The properties do exist, the type just does't know that
+            resolvedReturnType: serializeType((sig as any).resolvedReturnType),
+            minArgumentCount: (sig as any).minArgumentCount,
+            hasRestParameter: (sig as any).hasRestParameter,
+            // TODO: Unsure if these still exists in 2.0
+            target: (sig as any).target ? makeSignature((sig as any).target) : undefined,
+            unionSignatures: (sig as any).unionSignatures ? (sig as any).unionSignatures.map(makeSignature) : [],
+            isolatedSignatureType: (sig as any).isolatedSignatureType ? serializeType((sig as any).isolatedSignatureType) : undefined
         };
     }
 
@@ -298,7 +301,7 @@ function makeSerializer(tc:ts.TypeChecker) {
             var name = prop.getName();
             // XXX do we ignore some types by doing [0]???!
             // (.parent is required for typeof expressions)
-            var declaration = (prop.getDeclarations() || prop.parent.getDeclarations())[0];
+            var declaration = (prop.getDeclarations() || (prop as any).parent.getDeclarations())[0];
             var isClassDeclaration = !((<any>declaration).type);
             var isTypeOf = !!((<any>declaration).type && (<any>declaration).type.exprName);
             result[name] = serializeType(tc.getTypeAtLocation(declaration), isClassDeclaration || isTypeOf);
@@ -349,14 +352,14 @@ function makeSerializer(tc:ts.TypeChecker) {
         };
     }
 
-    function makeInterface(type:ts.InterfaceType):S.InterfaceType {
+    function makeInterface(type:ts.InterfaceTypeWithDeclaredMembers):S.InterfaceType {
         var typeParameters:S.SerializationID[] = type.typeParameters ? type.typeParameters.map((type) => serializeType(type)) : [];
-        var baseTypes:S.SerializationID[] = type.resolvedBaseTypes.map((type) => serializeType(type));
+        var baseTypes:S.SerializationID[] = (type as any).resolvedBaseTypes.map((type) => serializeType(type));
         var declaredProperties:{[name:string]: S.SerializationID} = makeProperties(type.declaredProperties);
         var declaredCallSignatures:S.Signature[] = type.declaredCallSignatures.map(makeSignature);
         var declaredConstructSignatures:S.Signature[] = type.declaredConstructSignatures.map(makeSignature);
-        var declaredStringIndexType = serializeType(type.declaredStringIndexType);
-        var declaredNumberIndexType = serializeType(type.declaredNumberIndexType);
+        var declaredStringIndexType = serializeType(type.declaredStringIndexInfo && type.declaredStringIndexInfo.type);
+        var declaredNumberIndexType = serializeType(type.declaredNumberIndexInfo && type.declaredNumberIndexInfo.type);
         return {
             kind: TypeKind[TypeKind.Interface],
             typeParameters: typeParameters,
@@ -370,9 +373,9 @@ function makeSerializer(tc:ts.TypeChecker) {
     }
 
     function makeGeneric(type:ts.GenericType):S.Type {
-        var interfacePart = makeInterface(type);
+        var interfacePart = makeInterface(type as any);
         var referencePart = makeReference(type);
-        return {
+        return <any>{
             kind: TypeKind[TypeKind.Generic],
             typeParameters: interfacePart.typeParameters,
             baseTypes: interfacePart.baseTypes,
@@ -388,18 +391,16 @@ function makeSerializer(tc:ts.TypeChecker) {
 
     // In TypeScript 2, a tuple is an array of type parameters. Meaning that any tuple of the same length can share type, they just have different parameters.
     function makeTuple(type:ts.GenericType):S.Type {
-        return {
+        return <any>{
             kind: TypeKind[TypeKind.Tuple],
             elementTypes: type.typeParameters.map(e => serializeType(e))
         }
     }
 
     function makeTypeParameter(type:ts.TypeParameter):S.Type {
-        return {
+        return <any>{
             kind: TypeKind[TypeKind.TypeParameter],
-            constraint: serializeType(type.constraint),
-            target: serializeType(type.target)
-            /*mapper:*/
+            constraint: serializeType(type.constraint)
         };
     }
 
@@ -456,7 +457,7 @@ function makeSerializer(tc:ts.TypeChecker) {
                 case ts.TypeFlags.Class + ts.TypeFlags.Reference:
                     return makeClass(<ts.GenericType>type, id);
                 case ts.TypeFlags.Interface:
-                    return makeInterface(<ts.InterfaceType>type);
+                    return makeInterface(<ts.InterfaceTypeWithDeclaredMembers>type);
                 case ts.TypeFlags.Reference:
                     return makeReference(<ts.TypeReference>type);
                 case ts.TypeFlags.Tuple + ts.TypeFlags.Reference:
@@ -467,7 +468,7 @@ function makeSerializer(tc:ts.TypeChecker) {
                     // XXX This is highly undocumented use of the typescript compiler API, but it seems to work out
                     // Anonymous: can always be made into an InterfaceType!?!
                     if (type.getConstructSignatures() || type.getCallSignatures() || type.getProperties() || type.getStringIndexType() || type.getNumberIndexType()) {
-                        var rType: ts.ResolvedType = <ts.ResolvedType>type;
+                        var rType: any = type as any; // ts.ResolvedType actually exists inside tsserverlibrary.d.ts
                         return {
                             kind: TypeKind[TypeKind.Interface],
                             typeParameters: [],
@@ -475,8 +476,8 @@ function makeSerializer(tc:ts.TypeChecker) {
                             declaredProperties: rType.properties ? makeProperties(rType.properties) : {},
                             declaredCallSignatures: rType.callSignatures.map(makeSignature),
                             declaredConstructSignatures: rType.constructSignatures.map(makeSignature),
-                            declaredStringIndexType: serializeType(rType.stringIndexType),
-                            declaredNumberIndexType: serializeType(rType.numberIndexType)
+                            declaredStringIndexType: serializeType(rType.stringIndexInfo && rType.stringIndexInfo.type),
+                            declaredNumberIndexType: serializeType(rType.stringIndexInfo && rType.numberIndexInfo.type)
                         };
                     }
                     return makeAnonymous();
@@ -596,7 +597,7 @@ function extractQualifiedDeclarations(program: ts.Program):QualifiedDeclarationW
     var declarations:QualifiedDeclarationWithType[] = [];
     program.getSourceFiles().forEach(sourceFile => {
         var tc = program.getTypeChecker();
-        var namedDeclarations = sourceFile.getNamedDeclarations();
+        var namedDeclarations = (sourceFile as any).getNamedDeclarations();
         for (var name in namedDeclarations) {
             namedDeclarations[name].forEach(decl => {
                 switch (decl.kind) {
@@ -633,7 +634,7 @@ function analyzeProgram(program:ts.Program):AnalysisResult {
         if (decl.kind == 201) {
             expectConstructor = true;
         }
-        return {qName: decl.qName, type: serializer.serializeType(decl.type, null, expectConstructor)};
+        return {qName: decl.qName, type: serializer.serializeType(decl.type, expectConstructor)};
     }
 
     var types = declarations.filter(

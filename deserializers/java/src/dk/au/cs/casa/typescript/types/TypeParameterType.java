@@ -2,15 +2,6 @@ package dk.au.cs.casa.typescript.types;
 
 public class TypeParameterType implements Type {
     private Type constraint;
-    private Type target;
-
-    public Type getTarget() {
-        return target;
-    }
-
-    public void setTarget(Type target) {
-        this.target = target;
-    }
 
     public Type getConstraint() {
         return constraint;

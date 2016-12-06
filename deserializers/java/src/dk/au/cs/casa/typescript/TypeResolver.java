@@ -181,7 +181,6 @@ class TypeResolver {
         @Override
         public Void visit(TypeParameterType t) {
             t.setConstraint(map(t.getConstraint()));
-            t.setTarget(map(t.getTarget()));
             return null;
         }
 
