@@ -477,7 +477,7 @@ function makeSerializer(tc:ts.TypeChecker) {
                             declaredCallSignatures: rType.callSignatures.map(makeSignature),
                             declaredConstructSignatures: rType.constructSignatures.map(makeSignature),
                             declaredStringIndexType: serializeType(rType.stringIndexInfo && rType.stringIndexInfo.type),
-                            declaredNumberIndexType: serializeType(rType.stringIndexInfo && rType.numberIndexInfo.type)
+                            declaredNumberIndexType: serializeType(rType.numberIndexInfo && rType.numberIndexInfo.type)
                         };
                     }
                     return makeAnonymous();
