@@ -451,38 +451,54 @@ function makeSerializer(tc:ts.TypeChecker) {
                 case ts.TypeFlags.Enum:
                     return makeEnum();
                 case ts.TypeFlags.TypeParameter:
+                    if ((type as any).isThisType) {
+                        return {kind: TypeKind[TypeKind.ThisType]};
+                    }
                     return makeTypeParameter(<ts.TypeParameter>type);
-                case ts.TypeFlags.Class:
-                    throw new Error("Is this even used anymore? ");// return makeClass(<ts.InterfaceType>type, id);
-                case ts.TypeFlags.Class + ts.TypeFlags.Reference:
-                    return makeClass(<ts.GenericType>type, id);
-                case ts.TypeFlags.Interface:
-                    return makeInterface(<ts.InterfaceTypeWithDeclaredMembers>type);
-                case ts.TypeFlags.Reference:
-                    return makeReference(<ts.TypeReference>type);
-                case ts.TypeFlags.Tuple + ts.TypeFlags.Reference:
-                    return makeTuple(<ts.GenericType>type);
+                case ts.TypeFlags.Object:
+                    switch ((type as ts.ObjectType).objectFlags) {
+                        case ts.ObjectFlags.Interface:
+                            return makeInterface(<ts.InterfaceTypeWithDeclaredMembers>type);
+                        case ts.ObjectFlags.Anonymous:
+                            // XXX This is highly undocumented use of the typescript compiler API, but it seems to work out
+                            // Anonymous: can always be made into an InterfaceType!?!
+                            if ((type as any).getConstructSignatures() || (type as any).getCallSignatures() || (type as any).getProperties() || (type as any).getStringIndexType() || (type as any).getNumberIndexType()) {
+                                var rType: any = type as any; // ts.ResolvedType actually exists inside tsserverlibrary.d.ts
+                                return {
+                                    kind: TypeKind[TypeKind.Interface],
+                                    typeParameters: [],
+                                    baseTypes: [],
+                                    declaredProperties: rType.properties ? makeProperties(rType.properties) : {},
+                                    declaredCallSignatures: rType.callSignatures.map(makeSignature),
+                                    declaredConstructSignatures: rType.constructSignatures.map(makeSignature),
+                                    declaredStringIndexType: serializeType(rType.stringIndexInfo && rType.stringIndexInfo.type),
+                                    declaredNumberIndexType: serializeType(rType.numberIndexInfo && rType.numberIndexInfo.type)
+                                };
+                            }
+                            throw new Error("Actually trying to construct an anonymous type!");
+                        case ts.ObjectFlags.Reference:
+                            return makeReference(<ts.TypeReference>type);
+                        case ts.ObjectFlags.Reference + ts.ObjectFlags.Interface:
+                            return makeGeneric(<ts.GenericType>type);
+                        case ts.ObjectFlags.Tuple + ts.ObjectFlags.Reference:
+                            return makeTuple(<ts.GenericType>type);
+                        case ts.ObjectFlags.Mapped + ts.ObjectFlags.Instantiated:
+                            return makeAnonymous(); // TODO:
+                        case ts.ObjectFlags.Class + ts.ObjectFlags.Reference:
+                            return makeClass(<ts.GenericType>type, id);
+                        case ts.ObjectFlags.Class:
+                        case ts.ObjectFlags.Tuple:
+                        case ts.ObjectFlags.Mapped:
+                        case ts.ObjectFlags.Instantiated:
+                        case ts.ObjectFlags.ObjectLiteral:
+                        case ts.ObjectFlags.EvolvingArray:
+                        case ts.ObjectFlags.ObjectLiteralPatternWithComputedProperties:
+                        case ts.ObjectFlags.ClassOrInterface:
+                        default:
+                            throw new Error("Unhandled objectFlags case: " + type.objectFlags);
+                    }
                 case ts.TypeFlags.Union:
                     return makeUnion(<ts.UnionType>type);
-                case ts.TypeFlags.Anonymous:
-                    // XXX This is highly undocumented use of the typescript compiler API, but it seems to work out
-                    // Anonymous: can always be made into an InterfaceType!?!
-                    if (type.getConstructSignatures() || type.getCallSignatures() || type.getProperties() || type.getStringIndexType() || type.getNumberIndexType()) {
-                        var rType: any = type as any; // ts.ResolvedType actually exists inside tsserverlibrary.d.ts
-                        return {
-                            kind: TypeKind[TypeKind.Interface],
-                            typeParameters: [],
-                            baseTypes: [],
-                            declaredProperties: rType.properties ? makeProperties(rType.properties) : {},
-                            declaredCallSignatures: rType.callSignatures.map(makeSignature),
-                            declaredConstructSignatures: rType.constructSignatures.map(makeSignature),
-                            declaredStringIndexType: serializeType(rType.stringIndexInfo && rType.stringIndexInfo.type),
-                            declaredNumberIndexType: serializeType(rType.numberIndexInfo && rType.numberIndexInfo.type)
-                        };
-                    }
-                    return makeAnonymous();
-                case ts.TypeFlags.Reference | ts.TypeFlags.Interface:
-                    return makeGeneric(<ts.GenericType>type);
                 case ts.TypeFlags.ESSymbol:
                     return makeSymbol();
                 case ts.TypeFlags.StringLiteral:
@@ -491,21 +507,23 @@ function makeSerializer(tc:ts.TypeChecker) {
                     return makeBooleanLiteral(type);
                 case ts.TypeFlags.NumberLiteral:
                     return makeNumberLiteral(type);
-                case ts.TypeFlags.ThisType | ts.TypeFlags.TypeParameter:
-                    return {kind: TypeKind[TypeKind.ThisType]};
                 case ts.TypeFlags.Never:
                     return {kind: TypeKind[TypeKind.Never]};
                 case ts.TypeFlags.Intersection:
                     return makeIntersection(type);
+                case ts.TypeFlags.IndexedAccess:// TODO: WTF IS THIS?
+                    return makeAnonymous();
                 default:
                     throw new Error("Unhandled type case: " + type.flags);
             }
         };
 
+        var isClass = type.flags == ts.TypeFlags.Object && (type as ts.ObjectType).objectFlags == (ts.ObjectFlags.Class + ts.ObjectFlags.Reference);
+
         var cacheKey = type;
         if (serializationCache.has(cacheKey)) {
             var resultingId = serializationCache.get(cacheKey);
-            if (ts.TypeFlags.Class + ts.TypeFlags.Reference == type.flags && !expectingClassConstructor) {
+            if (isClass && !expectingClassConstructor) {
                 return classInstanceMap[resultingId] || (classInstanceMap[resultingId] = nextSerializationID++);
             }
             return resultingId;
@@ -514,7 +532,7 @@ function makeSerializer(tc:ts.TypeChecker) {
         serializationCache.set(cacheKey, id);
         serializations[id] = makeType(type, id);
 
-        if (ts.TypeFlags.Class + ts.TypeFlags.Reference == type.flags && !expectingClassConstructor) {
+        if (isClass && !expectingClassConstructor) {
             return classInstanceMap[id] || (classInstanceMap[id] = nextSerializationID++);
         }
 
