@@ -141,6 +141,8 @@ enum TypeKind {
     Union,
     Intersection,
     Anonymous,
+    Index,
+    IndexedAccess,
     Never,
     ThisType,
     Symbol
@@ -301,10 +303,15 @@ function makeSerializer(tc:ts.TypeChecker) {
             var name = prop.getName();
             // XXX do we ignore some types by doing [0]???!
             // (.parent is required for typeof expressions)
-            var declaration = (prop.getDeclarations() || (prop as any).parent.getDeclarations())[0];
-            var isClassDeclaration = !((<any>declaration).type);
-            var isTypeOf = !!((<any>declaration).type && (<any>declaration).type.exprName);
-            result[name] = serializeType(tc.getTypeAtLocation(declaration), isClassDeclaration || isTypeOf);
+            let declarations = (prop.getDeclarations() || ((prop as any).parent && (prop as any).parent.getDeclarations()));
+            if (declarations) {
+                var declaration = declarations[0];
+                var isClassDeclaration = !((<any>declaration).type);
+                var isTypeOf = !!((<any>declaration).type && (<any>declaration).type.exprName);
+                result[name] = serializeType(tc.getTypeAtLocation(declaration), isClassDeclaration || isTypeOf);
+            } else {
+                result[name] = serializeType((prop as any).type);
+            }
         });
         return result;
     }
@@ -412,6 +419,36 @@ function makeSerializer(tc:ts.TypeChecker) {
         return {kind: TypeKind[TypeKind.Anonymous]};
     }
 
+    function makeIndexedAccessType(type: ts.IndexedAccessType):S.Type {
+        return <any>{
+            objectType: serializeType(type.objectType),
+            indexType: serializeType(type.indexType),
+            kind: TypeKind[TypeKind.IndexedAccess]
+        };
+    }
+
+    function makeIndex(type: ts.IndexType):S.Type {
+        return <any>{
+            type: serializeType(type.type),
+            kind: TypeKind[TypeKind.Index]
+        };
+    }
+
+    var makeAnonymousInterface = function (type: ts.Type): S.InterfaceType {
+        // ts.ResolvedType actually exists inside tsserverlibrary.d.ts, it seems to follow the type we are using below.
+        var rType: any = type;
+        return {
+            kind: TypeKind[TypeKind.Interface],
+            typeParameters: [],
+            baseTypes: [],
+            declaredProperties: rType.properties ? makeProperties(rType.properties) : {},
+            declaredCallSignatures: rType.callSignatures.map(makeSignature),
+            declaredConstructSignatures: rType.constructSignatures.map(makeSignature),
+            declaredStringIndexType: serializeType(rType.stringIndexInfo && rType.stringIndexInfo.type),
+            declaredNumberIndexType: serializeType(rType.numberIndexInfo && rType.numberIndexInfo.type)
+        };
+    };
+
     /**
      * Serializes a type script type.
      * @param type as the type to serialize
@@ -463,17 +500,7 @@ function makeSerializer(tc:ts.TypeChecker) {
                             // XXX This is highly undocumented use of the typescript compiler API, but it seems to work out
                             // Anonymous: can always be made into an InterfaceType!?!
                             if ((type as any).getConstructSignatures() || (type as any).getCallSignatures() || (type as any).getProperties() || (type as any).getStringIndexType() || (type as any).getNumberIndexType()) {
-                                var rType: any = type as any; // ts.ResolvedType actually exists inside tsserverlibrary.d.ts
-                                return {
-                                    kind: TypeKind[TypeKind.Interface],
-                                    typeParameters: [],
-                                    baseTypes: [],
-                                    declaredProperties: rType.properties ? makeProperties(rType.properties) : {},
-                                    declaredCallSignatures: rType.callSignatures.map(makeSignature),
-                                    declaredConstructSignatures: rType.constructSignatures.map(makeSignature),
-                                    declaredStringIndexType: serializeType(rType.stringIndexInfo && rType.stringIndexInfo.type),
-                                    declaredNumberIndexType: serializeType(rType.numberIndexInfo && rType.numberIndexInfo.type)
-                                };
+                                return makeAnonymousInterface(type);
                             }
                             throw new Error("Actually trying to construct an anonymous type!");
                         case ts.ObjectFlags.Reference:
@@ -483,12 +510,13 @@ function makeSerializer(tc:ts.TypeChecker) {
                         case ts.ObjectFlags.Tuple + ts.ObjectFlags.Reference:
                             return makeTuple(<ts.GenericType>type);
                         case ts.ObjectFlags.Mapped + ts.ObjectFlags.Instantiated:
-                            return makeAnonymous(); // TODO:
+                            return makeAnonymous(); // TODO: This happens with types like the return of Object.freeze, where the actual type depends on how it is called, so the mapped type cannot be "solved" by the compiler ahead of time.
                         case ts.ObjectFlags.Class + ts.ObjectFlags.Reference:
                             return makeClass(<ts.GenericType>type, id);
+                        case ts.ObjectFlags.Mapped:
+                            return makeAnonymousInterface(type); // Everything seems to be handled by the compiler.
                         case ts.ObjectFlags.Class:
                         case ts.ObjectFlags.Tuple:
-                        case ts.ObjectFlags.Mapped:
                         case ts.ObjectFlags.Instantiated:
                         case ts.ObjectFlags.ObjectLiteral:
                         case ts.ObjectFlags.EvolvingArray:
@@ -511,8 +539,10 @@ function makeSerializer(tc:ts.TypeChecker) {
                     return {kind: TypeKind[TypeKind.Never]};
                 case ts.TypeFlags.Intersection:
                     return makeIntersection(type);
-                case ts.TypeFlags.IndexedAccess:// TODO: WTF IS THIS?
-                    return makeAnonymous();
+                case ts.TypeFlags.IndexedAccess:
+                    return makeIndexedAccessType(type as ts.IndexedAccessType);
+                case ts.TypeFlags.Index:
+                    return makeIndex(type as ts.IndexType);
                 default:
                     throw new Error("Unhandled type case: " + type.flags);
             }

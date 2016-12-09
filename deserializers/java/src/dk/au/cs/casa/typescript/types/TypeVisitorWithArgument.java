@@ -36,4 +36,8 @@ public interface TypeVisitorWithArgument<T, A> {
     T visit(NeverType t, A a);
 
     T visit(ThisType t, A a);
+
+    T visit(IndexType t, A a);
+
+    T visit(IndexedAccessType t, A a);
 }

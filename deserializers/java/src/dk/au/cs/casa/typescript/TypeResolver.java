@@ -174,6 +174,19 @@ class TypeResolver {
         }
 
         @Override
+        public Void visit(IndexType t) {
+            t.setType(map(t.getType()));
+            return null;
+        }
+
+        @Override
+        public Void visit(IndexedAccessType t) {
+            t.setObjectType(map(t.getObjectType()));
+            t.setIndexType(map(t.getIndexType()));
+            return null;
+        }
+
+        @Override
         public Void visit(UnresolvedType t) {
             throw new RuntimeException("Should not occur here!?");
         }

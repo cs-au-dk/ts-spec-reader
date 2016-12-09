@@ -208,6 +208,10 @@ public class SpecReader {
                     return ctx.deserialize(object, ThisType.class);
                 case Symbol:
                     return ctx.deserialize(object, SymbolType.class);
+                case Index:
+                    return ctx.deserialize(object, IndexType.class);
+                case IndexedAccess:
+                    return ctx.deserialize(object, IndexedAccessType.class);
                 default:
                     throw new RuntimeException("Unhandled case: " + kind);
             }

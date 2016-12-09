@@ -3,7 +3,7 @@ package dk.au.cs.casa.typescript.types;
 import java.util.List;
 
 public class Signature {
-    private List<Integer> typeParameters;
+    private List<Type> typeParameters;
     private List<Parameter> parameters;
     private Type resolvedReturnType;
     private int minArgumentCount;
@@ -22,11 +22,11 @@ public class Signature {
         this.isolatedSignatureType = isolatedSignatureType;
     }
 
-    public List<Integer> getTypeParameters() {
+    public List<Type> getTypeParameters() {
         return typeParameters;
     }
 
-    public void setTypeParameters(List<Integer> typeParameters) {
+    public void setTypeParameters(List<Type> typeParameters) {
         this.typeParameters = typeParameters;
     }
 

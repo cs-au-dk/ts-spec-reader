@@ -36,4 +36,8 @@ public interface TypeVisitor<T> {
     T visit(NeverType t);
 
     T visit(ThisType t);
+
+    T visit(IndexType t);
+
+    T visit(IndexedAccessType t);
 }

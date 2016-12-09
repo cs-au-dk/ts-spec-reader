@@ -24,5 +24,7 @@ public enum TypeKind {
     Symbol,
     Never,
     ThisType,
+    Index,
+    IndexedAccess,
     Anonymous
 }
