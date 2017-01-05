@@ -489,7 +489,10 @@ function makeSerializer(tc:ts.TypeChecker) {
                     return makeEnum();
                 case ts.TypeFlags.TypeParameter:
                     if ((type as any).isThisType) {
-                        return {kind: TypeKind[TypeKind.ThisType]};
+                        return {
+                            kind: TypeKind[TypeKind.ThisType],
+                            constraint: serializeType(type.constraint)
+                        };
                     }
                     return makeTypeParameter(<ts.TypeParameter>type);
                 case ts.TypeFlags.Object:

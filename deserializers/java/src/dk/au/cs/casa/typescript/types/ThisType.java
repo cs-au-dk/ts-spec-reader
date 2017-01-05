@@ -1,9 +1,24 @@
 package dk.au.cs.casa.typescript.types;
 
+import java.util.List;
+
 public class ThisType implements Type {
+
+    private Type constraint;
+
     @Override
     public String toString() {
-        return "This";
+        return "ThisType{" +
+                "constraint=" + constraint +
+                '}';
+    }
+
+    public Type getConstraint() {
+        return constraint;
+    }
+
+    public void setConstraint(Type constraint) {
+        this.constraint = constraint;
     }
 
     @Override

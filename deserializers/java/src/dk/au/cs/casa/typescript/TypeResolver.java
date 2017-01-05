@@ -170,6 +170,7 @@ class TypeResolver {
 
         @Override
         public Void visit(ThisType t) {
+            t.setConstraint(map(t.getConstraint()));
             return null;
         }
 

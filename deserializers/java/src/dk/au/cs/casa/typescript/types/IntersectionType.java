@@ -3,16 +3,6 @@ package dk.au.cs.casa.typescript.types;
 import java.util.List;
 
 public class IntersectionType implements Type {
-    private static int counter = 0;
-    private final int count = counter++;
-
-
-    public IntersectionType() {
-        if (count == 0) {
-            System.out.println();
-        }
-    }
-
     private List<Type> elements;
 
     public List<Type> getElements() {
