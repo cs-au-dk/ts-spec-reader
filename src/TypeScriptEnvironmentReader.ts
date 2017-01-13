@@ -38,8 +38,13 @@ export function readFiles(fileNames:string[]):AnalysisResult {
  */
 export interface AnalysisResult {
     data: S.Type[]
-    globals: NestedSerialization
-    types: NestedSerialization
+    globals: NamedType[]
+    types: NamedType[]
+}
+
+interface NamedType {
+    qName: string[];
+    type: number
 }
 
 
@@ -331,7 +336,9 @@ function makeSerializer(tc:ts.TypeChecker) {
         const staticProperties = {};
         staticNames.forEach(function (name) {
             const staticType = type.symbol.exports[name];
-            staticProperties[name] = serializeType(tc.getTypeAtLocation(staticType.valueDeclaration));
+            if (staticType.valueDeclaration) { // <- If no value-declaration, then it is just an interface, and need not be added here. 
+                staticProperties[name] = serializeType(tc.getTypeAtLocation(staticType.valueDeclaration));
+            }
         });
 
         const declaredStringIndexType = serializeType(type.declaredStringIndexType);
@@ -500,6 +507,7 @@ function makeSerializer(tc:ts.TypeChecker) {
                         case ts.ObjectFlags.Interface:
                             return makeInterface(<ts.InterfaceTypeWithDeclaredMembers>type);
                         case ts.ObjectFlags.Anonymous:
+                        case ts.ObjectFlags.Anonymous + ts.ObjectFlags.Instantiated:
                             // XXX This is highly undocumented use of the typescript compiler API, but it seems to work out
                             // Anonymous: can always be made into an InterfaceType!?!
                             if ((type as any).getConstructSignatures() || (type as any).getCallSignatures() || (type as any).getProperties() || (type as any).getStringIndexType() || (type as any).getNumberIndexType()) {
@@ -706,42 +714,10 @@ function analyzeProgram(program:ts.Program):AnalysisResult {
         delayedOperations.pop()();
     }
 
-    function nest(flats:QualifiedSerialization[]):NestedSerialization {
-        var root:NestedSerialization = {};
-
-        function getHost(parent:NestedSerialization, qName:QName) {
-            if (qName.length === 0) {
-                return parent;
-            }
-            var head = qName[0];
-            var tail = qName.slice(1);
-            if (!parent.hasOwnProperty(head)) {
-                parent[head] = {};
-            }
-            var nextParent = parent[head];
-            if (typeof nextParent === 'number') {
-                console.log(parent);
-                throw new Error(util.format("Host is a leaf... (parent[%s] === %s)", head, nextParent));
-            } else {
-                return getHost(nextParent, tail);
-            }
-        }
-
-        flats.forEach(flat => {
-            var host = getHost(root, flat.qName.slice(0, flat.qName.length - 1));
-            var name = flat.qName[flat.qName.length - 1];
-            if (host[name] !== undefined) {
-                // ignore. The typescript compiler will complain about ambiguous declarations...
-            }
-            host[name] = flat.type;
-        });
-        return root;
-    }
-
     return {
         data: serializer.serializations,
-        globals: nest(globalProperties),
-        types: nest(types),
+        globals: globalProperties,
+        types: types
         /* TODO put ambient modules here? */
-    };
+    }
 }

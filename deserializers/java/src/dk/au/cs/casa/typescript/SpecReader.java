@@ -23,7 +23,7 @@ public class SpecReader {
 
     private final Type global;
 
-    private final TypeNameTree namedTypes;
+    private final List<NamedType> namedTypes;
 
     /**
      * Reads a specification from a file.
@@ -48,7 +48,6 @@ public class SpecReader {
         TypeResolver typeResolver = new TypeResolver();
         builder.registerTypeAdapter(Spec.class, new SpecAdapter(typeResolver));
         builder.registerTypeAdapter(Type.class, new TypeIDAdapter(typeResolver));
-        builder.registerTypeAdapter(TypeNameTree.class, new TypeNameTreeAdapter(typeResolver));
         Gson gson = builder.create();
         Spec spec = gson.fromJson(specification, Spec.class);
         this.namedTypes = spec.getTypes();
@@ -60,10 +59,14 @@ public class SpecReader {
     /**
      * Flattens a tree already flat tree. Exceptions will be thrown if the tree is not flat...
      */
-    private static Map<String, Type> flattenTypeNameTree(TypeNameTree tree) {
+    private static Map<String, Type> flattenTypeNameTree(List<NamedType> tree) {
         // should be type safe...
         Map<String, Type> map = new HashMap<>();
-        ((Node) tree).children.forEach((k, v) -> map.put(k, ((Leaf) v).getType()));
+        for (NamedType namedType : tree) {
+            assert namedType.qName.size() == 1;
+            map.put(namedType.qName.iterator().next(), namedType.type);
+        }
+
         return map;
     }
 
@@ -90,52 +93,16 @@ public class SpecReader {
     }
 
     private static <T> List<T> newList() {
-
         return new ArrayList<>();
     }
 
-    public TypeNameTree getNamedTypes() {
-
+    public List<NamedType> getNamedTypes() {
         return namedTypes;
     }
 
     public Type getGlobal() {
 
         return global;
-    }
-
-    public interface TypeNameTree {
-
-    }
-
-    private class TypeNameTreeAdapter implements JsonDeserializer<TypeNameTree> {
-
-        private final TypeResolver resolver;
-
-        private TypeNameTreeAdapter(TypeResolver resolver) {
-
-            this.resolver = resolver;
-        }
-
-        private TypeNameTree deserialize(JsonElement jsonElement) {
-
-            if (jsonElement.isJsonPrimitive()) {
-                return new Leaf(this.resolver.resolve(jsonElement.getAsInt()));
-            }
-            if (jsonElement.isJsonObject()) {
-                Map<String, TypeNameTree> children = new HashMap<>();
-                JsonObject object = jsonElement.getAsJsonObject();
-                object.entrySet().forEach(e -> children.put(e.getKey(), deserialize(e.getValue())));
-                return new Node(children);
-            }
-            throw new RuntimeException("Unhandled case: " + jsonElement);
-        }
-
-        @Override
-        public TypeNameTree deserialize(JsonElement jsonElement, java.lang.reflect.Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
-
-            return deserialize(jsonElement);
-        }
     }
 
     private class SpecAdapter implements JsonDeserializer<Spec> {
@@ -157,8 +124,19 @@ public class SpecReader {
                 this.typeResolver.register(id, deserializedType);
             }
             this.typeResolver.resolveAll();
-            TypeNameTree globals = ctx.deserialize(jsonObject.get("globals"), TypeNameTree.class);
-            TypeNameTree types = ctx.deserialize(jsonObject.get("types"), TypeNameTree.class);
+
+            List<NamedType> globals = new ArrayList<>();
+            JsonArray globalsArr = jsonObject.getAsJsonArray("globals");
+            for (int i = 0; i < globalsArr.size(); i++) {
+                globals.add(ctx.deserialize(globalsArr.get(i), NamedType.class));
+            }
+
+            List<NamedType> types = new ArrayList<>();
+            JsonArray typesArr = jsonObject.getAsJsonArray("types");
+            for (int i = 0; i < typesArr.size(); i++) {
+                types.add(ctx.deserialize(typesArr.get(i), NamedType.class));
+            }
+
             return new Spec(globals, types);
         }
 
@@ -234,13 +212,18 @@ public class SpecReader {
         }
     }
 
-    public class Spec {
+    public static final class NamedType {
+        public Type type;
+        public List<String> qName;
+    }
 
-        private TypeNameTree globals;
+    public static class Spec {
 
-        private TypeNameTree types;
+        private List<NamedType> globals;
 
-        public Spec(TypeNameTree globals, TypeNameTree types) {
+        private List<NamedType> types;
+
+        public Spec(List<NamedType> globals, List<NamedType> types) {
 
             this.globals = globals;
             this.types = types;
@@ -255,60 +238,14 @@ public class SpecReader {
                     '}';
         }
 
-        public TypeNameTree getGlobals() {
+        public List<NamedType> getGlobals() {
 
             return globals;
         }
 
-        public TypeNameTree getTypes() {
+        public List<NamedType> getTypes() {
 
             return types;
-        }
-    }
-
-    public class Leaf implements TypeNameTree {
-
-        private final Type type;
-
-        public Leaf(Type type) {
-
-            this.type = type;
-        }
-
-        public Type getType() {
-
-            return type;
-        }
-
-        @Override
-        public String toString() {
-
-            return "Leaf{" +
-                    "type=" + type +
-                    '}';
-        }
-    }
-
-    public class Node implements TypeNameTree {
-
-        private final Map<String, TypeNameTree> children;
-
-        private Node(Map<String, TypeNameTree> children) {
-
-            this.children = children;
-        }
-
-        public Map<String, TypeNameTree> getChildren() {
-
-            return children;
-        }
-
-        @Override
-        public String toString() {
-
-            return "Node{" +
-                    "children=" + children +
-                    '}';
         }
     }
 }
