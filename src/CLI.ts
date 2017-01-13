@@ -21,10 +21,10 @@ program
     .option("-o --output <file>", "The file to output to")
     .parse(process.argv);
 
-var es5 = path.resolve(__dirname + "/../node_modules/typescript/lib/lib.d.ts"); // TODO: Didn't find anything without DOM.
+var es5 = path.resolve(__dirname + "/../node_modules/typescript/lib/lib.d.ts");
 var es6 = path.resolve(__dirname + "/../node_modules/typescript/lib/lib.es2016.d.ts");
 var es5dom = path.resolve(__dirname + "/../node_modules/typescript/lib/lib.d.ts");
-var es6dom = path.resolve(__dirname + "/../node_modules/typescript/lib/lib.es2016.d.ts");
+var es6dom = path.resolve(__dirname + "/../node_modules/typescript/lib/lib.es6.d.ts");
 var node = path.resolve(__dirname + "/../typings/node/node.d.ts");
 
 var targets:string[];
