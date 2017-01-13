@@ -99,8 +99,18 @@ class TypeResolver {
         }
 
         private void visit(Signature signature) {
-            signature.getParameters().forEach(p -> p.setType(map(p.getType())));
-            signature.setResolvedReturnType(map(signature.getResolvedReturnType()));
+            signature.getParameters().forEach(p -> {
+                if (p.getType() instanceof UnresolvedType) {
+                    p.setType(map(p.getType()));
+                }
+            });
+            if (signature.getResolvedReturnType() instanceof UnresolvedType) {
+                signature.setResolvedReturnType(map(signature.getResolvedReturnType()));
+            }
+
+            if (signature.getTarget() != null && signature.getTarget() != signature) {
+                visit(signature.getTarget());
+            }
         }
 
         private List<Type> map(List<Type> types) {
