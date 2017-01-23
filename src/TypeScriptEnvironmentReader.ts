@@ -690,7 +690,7 @@ function analyzeProgram(program:ts.Program):AnalysisResult {
     function serialize(decl:QualifiedDeclarationWithType):QualifiedSerialization {
         // TODO: TypeOf currently doesn't work here.
         var expectConstructor = false;
-        if (decl.kind == 201) {
+        if (decl.kind == 201 || decl.kind == 226) {
             expectConstructor = true;
         }
         return {qName: decl.qName, type: serializer.serializeType(decl.type, expectConstructor)};
