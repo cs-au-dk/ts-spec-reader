@@ -119,6 +119,11 @@ public class ClassType implements Type {
         this.instanceType.setBaseTypes(this.baseTypes.stream().map(baseType -> {
             if (baseType instanceof ClassType) {
                 return ((ClassType) baseType).getInstanceType();
+            } else if (baseType instanceof ReferenceType && ((ReferenceType) baseType).getTarget() instanceof ClassType) {
+                ReferenceType result = new ReferenceType();
+                result.setTypeArguments(((ReferenceType) baseType).getTypeArguments());
+                result.setTarget(((ClassType) ((ReferenceType) baseType).getTarget()).getInstanceType());
+                return result;
             } else {
                 return baseType;
             }
