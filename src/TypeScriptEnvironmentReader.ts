@@ -239,8 +239,8 @@ function makeSerializer(tc:ts.TypeChecker) {
         return <any>{kind: TypeKind[TypeKind.NumberLiteral], value: Number(type.text)};
     }
 
-    function makeReference(type:ts.TypeReference):S.ReferenceType {
-        var target = serializeType(type.target);
+    function makeReference(type:ts.TypeReference, expectingClassConstructor?):S.ReferenceType {
+        var target = serializeType(type.target, expectingClassConstructor);
         var typeArguments:S.SerializationID[] = type.typeArguments ? type.typeArguments.map((type) => serializeType(type)) : [];
         return {
             kind: TypeKind[TypeKind.Reference],
@@ -510,12 +510,23 @@ function makeSerializer(tc:ts.TypeChecker) {
                         case ts.ObjectFlags.Anonymous + ts.ObjectFlags.Instantiated:
                             // XXX This is highly undocumented use of the typescript compiler API, but it seems to work out
                             // Anonymous: can always be made into an InterfaceType!?!
+                            var declaredProperties = type.properties ? makeProperties(type.properties) : {};
+                            var declaredConstructSignatures = type.constructSignatures.map(makeSignature);
+                            if (Object.keys(declaredProperties).length == 1 && declaredProperties["prototype"]) {
+                                if (declaredConstructSignatures.length == 1) {
+                                    var returnType = type.constructSignatures[0].resolvedReturnType;
+                                    if (returnType.flags == ts.TypeFlags.Object && returnType.objectFlags == ts.ObjectFlags.Class + ts.ObjectFlags.Reference) {
+                                        expectingClassConstructor = true;
+                                        return makeType(returnType, id);
+                                    }
+                                }
+                            }
                             if ((type as any).getConstructSignatures() || (type as any).getCallSignatures() || (type as any).getProperties() || (type as any).getStringIndexType() || (type as any).getNumberIndexType()) {
                                 return makeAnonymousInterface(type);
                             }
                             throw new Error("Actually trying to construct an anonymous type!");
                         case ts.ObjectFlags.Reference:
-                            return makeReference(<ts.TypeReference>type);
+                            return makeReference(<ts.TypeReference>type, expectingClassConstructor);
                         case ts.ObjectFlags.Reference + ts.ObjectFlags.Interface:
                             return makeGeneric(<ts.GenericType>type);
                         case ts.ObjectFlags.Tuple + ts.ObjectFlags.Reference:
