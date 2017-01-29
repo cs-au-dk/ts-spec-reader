@@ -466,16 +466,16 @@ function makeSerializer(tc:ts.TypeChecker) {
         if (type === undefined) {
             return -1; // on purpose!
         }
-        var makeType = function (type, id) {
-            // XXX Need to execute this statement!
-            // This seems to force the type to be a "ResolvedType", it seems like an internal thing of the TypeChecker
-            // Perhaps this implementation should use more getters on the types and/or on the TypeChecker?
-            try {
-                tc.getSignaturesOfType(type, 0);
-            } catch (e) {
-                // Do nothing.
-            }
+        // XXX Need to execute this statement!
+        // This seems to force the type to be a "ResolvedType", it seems like an internal thing of the TypeChecker
+        // Perhaps this implementation should use more getters on the types and/or on the TypeChecker?
+        try {
+            tc.getSignaturesOfType(type, 0);
+        } catch (e) {
+            // Do nothing.
+        }
 
+         function makeType(type, id) {
             switch (type.flags) {
                 case ts.TypeFlags.Any:
                     return makeAny();
@@ -510,17 +510,6 @@ function makeSerializer(tc:ts.TypeChecker) {
                         case ts.ObjectFlags.Anonymous + ts.ObjectFlags.Instantiated:
                             // XXX This is highly undocumented use of the typescript compiler API, but it seems to work out
                             // Anonymous: can always be made into an InterfaceType!?!
-                            var declaredProperties = type.properties ? makeProperties(type.properties) : {};
-                            var declaredConstructSignatures = type.constructSignatures.map(makeSignature);
-                            if (Object.keys(declaredProperties).length == 1 && declaredProperties["prototype"]) {
-                                if (declaredConstructSignatures.length == 1) {
-                                    var returnType = type.constructSignatures[0].resolvedReturnType;
-                                    if (returnType.flags == ts.TypeFlags.Object && returnType.objectFlags == ts.ObjectFlags.Class + ts.ObjectFlags.Reference) {
-                                        expectingClassConstructor = true;
-                                        return makeType(returnType, id);
-                                    }
-                                }
-                            }
                             if ((type as any).getConstructSignatures() || (type as any).getCallSignatures() || (type as any).getProperties() || (type as any).getStringIndexType() || (type as any).getNumberIndexType()) {
                                 return makeAnonymousInterface(type);
                             }
@@ -568,7 +557,23 @@ function makeSerializer(tc:ts.TypeChecker) {
                 default:
                     throw new Error("Unhandled type case: " + type.flags);
             }
-        };
+        }
+
+        if (
+            type.flags == ts.TypeFlags.Object &&
+            ((type as ts.ObjectType).objectFlags == ts.ObjectFlags.Anonymous + ts.ObjectFlags.Instantiated) || (type as ts.ObjectType).objectFlags == ts.ObjectFlags.Anonymous &&
+            (type as any).constructSignatures
+        ) {
+            var rType: any = type;
+            if (rType.properties && rType.properties.filter(function (prop) {return prop.name == "prototype"}).length) {
+                if (rType.constructSignatures.length) {
+                    var returnType = rType.constructSignatures[0].resolvedReturnType;
+                    if (returnType.flags == ts.TypeFlags.Object && returnType.objectFlags == ts.ObjectFlags.Class + ts.ObjectFlags.Reference) {
+                        return serializeType(returnType, true);
+                    }
+                }
+            }
+        }
 
         var isClass = type.flags == ts.TypeFlags.Object && (type as ts.ObjectType).objectFlags == (ts.ObjectFlags.Class + ts.ObjectFlags.Reference);
 
