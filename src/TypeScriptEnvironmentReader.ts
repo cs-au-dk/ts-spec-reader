@@ -309,11 +309,10 @@ function makeSerializer(tc:ts.TypeChecker) {
             // XXX do we ignore some types by doing [0]???!
             // (.parent is required for typeof expressions)
             let declarations = (prop.getDeclarations() || ((prop as any).parent && (prop as any).parent.getDeclarations()));
-            let orgDecs = declarations;
-            declarations = declarations.filter(dec => {
-                return dec.kind !== ts.SyntaxKind.InterfaceDeclaration;
-            });
             if (declarations) {
+                declarations = declarations.filter(dec => {
+                    return dec.kind !== ts.SyntaxKind.InterfaceDeclaration;
+                });
                 if (declarations.length > 1) {
                     if (declarations.filter(dec => {
                             return dec.kind !== ts.SyntaxKind.MethodSignature;
