@@ -105,6 +105,17 @@ public class ClassType implements Type {
         this.typeArguments = typeArguments;
     }
 
+    public ClassInstanceType instance = null;
+    public ClassInstanceType getInstance() {
+        if (instance != null) {
+            return instance;
+        }
+        ClassInstanceType result = new ClassInstanceType();
+        result.setClassType(this);
+        instance = result;
+        return result;
+    }
+
     private InterfaceType instanceType = null;
     public InterfaceType getInstanceType() {
         if (this.instanceType != null) {
