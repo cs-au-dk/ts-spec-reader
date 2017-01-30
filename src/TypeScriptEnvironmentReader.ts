@@ -306,7 +306,6 @@ function makeSerializer(tc:ts.TypeChecker) {
         var result:{[name:string]: S.SerializationID} = {};
         properties.forEach(prop => {
             var name = prop.getName();
-            // XXX do we ignore some types by doing [0]???!
             // (.parent is required for typeof expressions)
             let declarations = (prop.getDeclarations() || ((prop as any).parent && (prop as any).parent.getDeclarations()));
             if (declarations) {
@@ -314,9 +313,15 @@ function makeSerializer(tc:ts.TypeChecker) {
                     return dec.kind !== ts.SyntaxKind.InterfaceDeclaration;
                 });
                 if (declarations.length > 1) {
-                    if (declarations.filter(dec => {
-                            return dec.kind !== ts.SyntaxKind.MethodSignature;
-                        }).length) {
+                    let isMethodSignatures = declarations.filter(dec => {
+                        return dec.kind === ts.SyntaxKind.MethodSignature;
+                    }).length = declarations.length;
+
+                    let isModuleDecs = declarations.filter(dec => {
+                        return dec.kind === ts.SyntaxKind.ModuleDeclaration;
+                    }).length = declarations.length;
+
+                    if (!isMethodSignatures && !isModuleDecs) {
                         throw new Error("Had multiple property declarations, and it wasn't just methodSignatures.");
                     }
                 }
