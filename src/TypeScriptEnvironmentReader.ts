@@ -351,8 +351,11 @@ function makeSerializer(tc:ts.TypeChecker) {
         const staticProperties = {};
         staticNames.forEach(function (name) {
             const staticType = type.symbol.exports[name];
-            if (staticType.valueDeclaration) { // <- If no value-declaration, then it is just an interface, and need not be added here. 
-                staticProperties[name] = serializeType(tc.getTypeAtLocation(staticType.valueDeclaration));
+            if (staticType.valueDeclaration) { // <- If no value-declaration, then it is just an interface, and need not be added here.
+                var isClassDeclaration = !((<any>staticType.valueDeclaration).type);
+                var isTypeOf = !!((<any>staticType.valueDeclaration).type && (<any>staticType.valueDeclaration).type.exprName);
+
+                staticProperties[name] = serializeType(tc.getTypeAtLocation(staticType.valueDeclaration), isClassDeclaration || isTypeOf);
             }
         });
 
