@@ -8,5 +8,8 @@ public enum SimpleTypeKind {
     Boolean,
     Void,
     Undefined,
-    Null
+    Null,
+    Never,
+    Symbol,
+    Object
 }

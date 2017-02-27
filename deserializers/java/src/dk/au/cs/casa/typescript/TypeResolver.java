@@ -174,11 +174,6 @@ class TypeResolver {
         }
 
         @Override
-        public Void visit(NeverType t) {
-            return null;
-        }
-
-        @Override
         public Void visit(ThisType t) {
             t.setConstraint(map(t.getConstraint()));
             return null;
@@ -205,11 +200,6 @@ class TypeResolver {
         @Override
         public Void visit(TypeParameterType t) {
             t.setConstraint(map(t.getConstraint()));
-            return null;
-        }
-
-        @Override
-        public Void visit(SymbolType t) {
             return null;
         }
 

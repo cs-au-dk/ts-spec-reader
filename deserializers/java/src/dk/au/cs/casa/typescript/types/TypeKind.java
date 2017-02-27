@@ -21,10 +21,11 @@ public enum TypeKind {
     Tuple,
     Union,
     Intersection,
-    Symbol,
-    Never,
     ThisType,
     Index,
     IndexedAccess,
-    Anonymous
+    Anonymous,
+    Object,
+    Symbol,
+    Never
 }

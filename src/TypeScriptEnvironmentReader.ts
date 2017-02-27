@@ -150,7 +150,8 @@ enum TypeKind {
     IndexedAccess,
     Never,
     ThisType,
-    Symbol
+    Symbol,
+    Object
 }
 
 /**
@@ -171,6 +172,9 @@ function makeSerializer(tc:ts.TypeChecker) {
         Void: {kind: TypeKind[TypeKind.Void]},
         Undefined: {kind: TypeKind[TypeKind.Undefined]},
         Null: {kind: TypeKind[TypeKind.Null]},
+        Object: {kind: TypeKind[TypeKind.Object]},
+        Never: {kind: TypeKind[TypeKind.Never]},
+        Symbol: {kind: TypeKind[TypeKind.Symbol]},
         Enum: {kind: TypeKind[TypeKind.Enum]}
     };
 
@@ -342,19 +346,26 @@ function makeSerializer(tc:ts.TypeChecker) {
         serializations[classInstanceMap[classId]] = instanceType;
 
         const type = <any>typeArg;
-        const constructor = type.members.__constructor || type.symbol.members.__constructor;
+        let constructor = null;
+        let extractConstructor = function (e) {
+            if (e.name == "__constructor") {
+                constructor = e;
+            }
+        };
+        type.members.forEach(extractConstructor);
+        type.symbol.members.forEach(extractConstructor);
         const constructorSignatures = constructor ? constructor.declarations.map(makeConstructorSignature.bind(null, -1)) : [makeEmptyConstructorSignature(-1)];
-        const staticNames = Object.keys(type.symbol.exports);
 
-        staticNames.splice(staticNames.indexOf("prototype"), 1);
+        var staticProperties = {};
 
-        const staticProperties = {};
-        staticNames.forEach(function (name) {
-            const staticType = type.symbol.exports[name];
-            if (staticType.valueDeclaration) { // <- If no value-declaration, then it is just an interface, and need not be added here.
-                var isClassDeclaration = !((<any>staticType.valueDeclaration).type);
-                var isTypeOf = !!((<any>staticType.valueDeclaration).type && (<any>staticType.valueDeclaration).type.exprName);
-
+        type.symbol.exports.forEach(function (staticType) {
+            var name = staticType.name;
+            if (name === "prototype") {
+                return;
+            }
+            if (staticType.valueDeclaration) {
+                var isClassDeclaration = !(staticType.valueDeclaration.type);
+                var isTypeOf = !!(staticType.valueDeclaration.type && staticType.valueDeclaration.type.exprName);
                 staticProperties[name] = serializeType(tc.getTypeAtLocation(staticType.valueDeclaration), isClassDeclaration || isTypeOf);
             }
         });
@@ -437,7 +448,7 @@ function makeSerializer(tc:ts.TypeChecker) {
     }
 
     function makeSymbol():S.Type {
-        return {kind: TypeKind[TypeKind.Symbol]};
+        return primitives.Symbol;
     }
 
     function makeAnonymous():S.Type {
@@ -565,11 +576,16 @@ function makeSerializer(tc:ts.TypeChecker) {
                 case ts.TypeFlags.NumberLiteral:
                     return makeNumberLiteral(type);
                 case ts.TypeFlags.Never:
-                    return {kind: TypeKind[TypeKind.Never]};
+                    return primitives.Never;
                 case ts.TypeFlags.Intersection:
                     return makeIntersection(type);
                 case ts.TypeFlags.IndexedAccess:
                     return makeIndexedAccessType(type as ts.IndexedAccessType);
+                case ts.TypeFlags.NonPrimitive:
+                    if (type.intrinsicName == "object") {
+                        return primitives.Object;
+                    }
+                    throw new Error("Unhandled non-primitive: " + type.intrinsicName);
                 case ts.TypeFlags.Index:
                     return makeIndex(type as ts.IndexType);
                 default:
@@ -689,17 +705,17 @@ function extractQualifiedDeclarations(program: ts.Program):QualifiedDeclarationW
 
     var declarations:QualifiedDeclarationWithType[] = [];
     program.getSourceFiles().forEach(sourceFile => {
-        var tc = program.getTypeChecker();
-        var namedDeclarations = (sourceFile as any).getNamedDeclarations();
-        for (var name in namedDeclarations) {
-            namedDeclarations[name].forEach(decl => {
+        const tc = program.getTypeChecker();
+        const namedDeclarations = (sourceFile as any).getNamedDeclarations();
+        namedDeclarations.forEach(function (declaration, name) {
+            declaration.forEach(decl => {
                 switch (decl.kind) {
                     case ts.SyntaxKind.VariableDeclaration:
                     case ts.SyntaxKind.ClassDeclaration:
                     case ts.SyntaxKind.FunctionDeclaration:
                     case ts.SyntaxKind.ModuleDeclaration:
                     case ts.SyntaxKind.InterfaceDeclaration:
-                        var type:ts.Type = tc.getTypeAtLocation(decl);
+                        let type: ts.Type = tc.getTypeAtLocation(decl);
                         declarations.push({qName: getQName(decl), type: type, kind: decl.kind});
                         break;
                     default:
@@ -707,8 +723,8 @@ function extractQualifiedDeclarations(program: ts.Program):QualifiedDeclarationW
                 }
 
             });
-        }
-    })
+        });
+    });
     return declarations;
 }
 
@@ -724,7 +740,7 @@ function analyzeProgram(program:ts.Program):AnalysisResult {
     function serialize(decl:QualifiedDeclarationWithType):QualifiedSerialization {
         // TODO: TypeOf currently doesn't work here.
         var expectConstructor = false;
-        if (decl.kind == 201 || decl.kind == 226) {
+        if (decl.kind == ts.SyntaxKind.ClassDeclaration) {
             expectConstructor = true;
         }
         return {qName: decl.qName, type: serializer.serializeType(decl.type, expectConstructor)};
