@@ -756,9 +756,9 @@ function analyzeProgram(program:ts.Program):AnalysisResult {
     ).map(serialize);
 
     /*var ambientModules = */
-    declarations.filter(
+    /*declarations.filter(
             d => d.kind !== ts.SyntaxKind.InterfaceDeclaration && d.qName.length === 1 && d.qName[0][0] === "'"
-    ).map(serialize);
+    ).map(serialize);*/
 
     while(delayedOperations.length) {
         delayedOperations.pop()();
