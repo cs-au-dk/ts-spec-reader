@@ -1,7 +1,7 @@
 package dk.au.cs.casa.typescript.types;
 
 public class SimpleType implements Type {
-    private final SimpleTypeKind kind;
+    private SimpleTypeKind kind;
 
     public SimpleType(SimpleTypeKind kind) {
         this.kind = kind;
@@ -19,6 +19,10 @@ public class SimpleType implements Type {
 
     public SimpleTypeKind getKind() {
         return kind;
+    }
+
+    public void setKind(SimpleTypeKind kind) {
+        this.kind = kind;
     }
 
     @Override
