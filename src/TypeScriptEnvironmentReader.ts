@@ -40,6 +40,7 @@ export interface AnalysisResult {
     data: S.Type[]
     globals: NamedType[]
     types: NamedType[]
+    ambient: NamedType[]
 }
 
 interface NamedType {
@@ -538,10 +539,42 @@ function makeSerializer(tc:ts.TypeChecker) {
                         case ts.ObjectFlags.Anonymous:
                         case ts.ObjectFlags.Anonymous + ts.ObjectFlags.Instantiated:
                             // XXX This is highly undocumented use of the typescript compiler API, but it seems to work out
-                            // Anonymous: can always be made into an InterfaceType!?!
+
+                            if (typeof type.members === "undefined") {
+                                // This happens (I hope), only when there is an "export = foo;" inside a module.
+                                const statements = type.symbol.valueDeclaration.body.statements;
+                                const props = [];
+                                let baseType;
+                                for (let i = 0; i < statements.length; i++) {
+                                    const statement = statements[i];
+                                    if (statement.expression) {
+                                        baseType = makeType(tc.getTypeAtLocation(statement.expression), id);
+                                    } else {
+                                        const declarations = statement.declarationList.declarations;
+                                        if (declarations.length !== 1) {
+                                            throw new Error();
+                                        }
+                                        const declaration = declarations[0];
+                                        props.push({
+                                            name: declaration.name.text,
+                                            type: serializeType(tc.getTypeAtLocation(declaration.name))
+                                        });
+                                    }
+                                }
+                                if (!baseType || baseType.kind !== TypeKind[TypeKind.Interface]) {
+                                    throw new Error();
+                                }
+                                for (let i = 0; i < props.length; i++) {
+                                    const prop = props[i];
+                                    baseType.declaredProperties[prop.name] = prop.type;
+                                }
+                                return baseType;
+                            }
+
                             if ((type as any).getConstructSignatures() || (type as any).getCallSignatures() || (type as any).getProperties() || (type as any).getStringIndexType() || (type as any).getNumberIndexType()) {
                                 return makeAnonymousInterface(type);
                             }
+
                             throw new Error("Actually trying to construct an anonymous type!");
                         case ts.ObjectFlags.Reference:
                             return makeReference(<ts.TypeReference>type, expectingClassConstructor);
@@ -755,10 +788,17 @@ function analyzeProgram(program:ts.Program):AnalysisResult {
         }
     ).map(serialize);
 
-    /*var ambientModules = */
-    /*declarations.filter(
+    var ambientModules = declarations.filter(
             d => d.kind !== ts.SyntaxKind.InterfaceDeclaration && d.qName.length === 1 && d.qName[0][0] === "'"
-    ).map(serialize);*/
+    ).map(serialize).map(decl => {
+        let name = decl.qName[0];
+        return {
+            qName: [name.substr(1, name.length -2)],
+            type: decl.type
+        }
+    });
+
+
 
     while(delayedOperations.length) {
         delayedOperations.pop()();
@@ -767,7 +807,7 @@ function analyzeProgram(program:ts.Program):AnalysisResult {
     return {
         data: serializer.serializations,
         globals: globalProperties,
-        types: types
-        /* TODO put ambient modules here? */
+        types: types,
+        ambient: ambientModules
     }
 }

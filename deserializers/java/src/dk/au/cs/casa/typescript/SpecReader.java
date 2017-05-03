@@ -24,6 +24,7 @@ public class SpecReader {
     private final Type global;
 
     private final List<NamedType> namedTypes;
+    private final List<NamedType> ambientTypes;
 
     /**
      * Reads a specification from a file.
@@ -54,6 +55,7 @@ public class SpecReader {
         InterfaceType global = makeEmptySyntheticInterfaceType();
         global.getDeclaredProperties().putAll(flattenTypeNameTree(spec.getGlobals()));
         this.global = global;
+        this.ambientTypes = spec.ambient;
     }
 
     /**
@@ -75,7 +77,6 @@ public class SpecReader {
      * Simplifies some implementation-cases.
      */
     public static InterfaceType makeEmptySyntheticInterfaceType() {
-
         InterfaceType interfaceType = new InterfaceType();
         interfaceType.setBaseTypes(newList());
         interfaceType.setDeclaredCallSignatures(newList());
@@ -88,7 +89,6 @@ public class SpecReader {
     }
 
     private static <K, V> Map<K, V> newMap() {
-
         return new HashMap<>();
     }
 
@@ -101,12 +101,14 @@ public class SpecReader {
     }
 
     public Type getGlobal() {
-
         return global;
     }
 
-    private class SpecAdapter implements JsonDeserializer<Spec> {
+    public List<NamedType> getAmbientTypes() {
+        return ambientTypes;
+    }
 
+    private class SpecAdapter implements JsonDeserializer<Spec> {
         private final TypeResolver typeResolver;
 
         public SpecAdapter(TypeResolver typeResolver) {
@@ -137,7 +139,13 @@ public class SpecReader {
                 types.add(ctx.deserialize(typesArr.get(i), NamedType.class));
             }
 
-            return new Spec(globals, types);
+            List<NamedType> ambient = new ArrayList<>();
+            JsonArray ambientArr = jsonObject.getAsJsonArray("ambient");
+            for (int i = 0; i < ambientArr.size(); i++) {
+                ambient.add(ctx.deserialize(ambientArr.get(i), NamedType.class));
+            }
+
+            return new Spec(globals, types, ambient);
         }
 
         private Type deserializeUnresolvedType(JsonElement jsonElement, JsonDeserializationContext ctx) {
@@ -196,17 +204,14 @@ public class SpecReader {
     }
 
     private class TypeIDAdapter implements JsonDeserializer<Type> {
-
         private final TypeResolver resolver;
 
         private TypeIDAdapter(TypeResolver resolver) {
-
             this.resolver = resolver;
         }
 
         @Override
         public Type deserialize(JsonElement jsonElement, java.lang.reflect.Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
-
             return this.resolver.resolve(jsonElement.getAsInt());
         }
     }
@@ -217,34 +222,35 @@ public class SpecReader {
     }
 
     public static class Spec {
-
         private List<NamedType> globals;
-
         private List<NamedType> types;
+        private List<NamedType> ambient;
 
-        public Spec(List<NamedType> globals, List<NamedType> types) {
-
+        public Spec(List<NamedType> globals, List<NamedType> types, List<NamedType> ambient) {
             this.globals = globals;
             this.types = types;
+            this.ambient = ambient;
         }
 
         @Override
         public String toString() {
-
             return "Spec{" +
                     "globals=" + globals +
                     ", types=" + types +
+                    ", ambient=" + ambient +
                     '}';
         }
 
         public List<NamedType> getGlobals() {
-
             return globals;
         }
 
         public List<NamedType> getTypes() {
-
             return types;
+        }
+
+        public List<NamedType> getAmbient() {
+            return ambient;
         }
     }
 }
