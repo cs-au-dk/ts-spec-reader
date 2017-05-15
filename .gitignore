@@ -1,3 +1,12 @@
+# Mac OS thumbnails
+.DS_Store
+
+# Gradle build directory
+build/
+
+# Gradle 
+.gradle
+
 node_modules/*
 src/CLI.js
 src/CLI.js.map
