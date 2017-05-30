@@ -17,7 +17,9 @@ public interface TypeVisitorWithArgument<T, A> {
 
     T visit(UnionType t, A a);
 
-    T visit(UnresolvedType t, A a);
+    default T visit(UnresolvedType t, A a) {
+        throw new RuntimeException();
+    }
 
     T visit(TypeParameterType t, A a);
 

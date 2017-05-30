@@ -17,7 +17,9 @@ public interface TypeVisitor<T> {
 
     T visit(UnionType t);
 
-    T visit(UnresolvedType t);
+    default T visit(UnresolvedType t) {
+        throw new RuntimeException();
+    }
 
     T visit(TypeParameterType t);
 
