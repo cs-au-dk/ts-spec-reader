@@ -111,6 +111,8 @@ class TypeResolver {
             if (signature.getTarget() != null && signature.getTarget() != signature) {
                 visit(signature.getTarget());
             }
+
+            signature.setTypeParameters(map(signature.getTypeParameters()));
         }
 
         private List<Type> map(List<Type> types) {
