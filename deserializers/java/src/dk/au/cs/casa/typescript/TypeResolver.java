@@ -195,11 +195,6 @@ class TypeResolver {
         }
 
         @Override
-        public Void visit(UnresolvedType t) {
-            throw new RuntimeException("Should not occur here!?");
-        }
-
-        @Override
         public Void visit(TypeParameterType t) {
             t.setConstraint(map(t.getConstraint()));
             return null;
