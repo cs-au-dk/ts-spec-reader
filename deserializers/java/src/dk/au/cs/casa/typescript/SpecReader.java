@@ -100,8 +100,8 @@ public class SpecReader {
         return namedTypes;
     }
 
-    public Type getGlobal() {
-        return global;
+    public InterfaceType getGlobal() {
+        return (InterfaceType) global;
     }
 
     public List<NamedType> getAmbientTypes() {
