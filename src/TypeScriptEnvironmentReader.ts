@@ -233,7 +233,7 @@ function makeSerializer(tc:ts.TypeChecker) {
     }
 
     function makeStringLiteral(type):S.Type {
-        return <any>{kind: TypeKind[TypeKind.StringLiteral], text: type.text};
+        return <any>{kind: TypeKind[TypeKind.StringLiteral], text: type.value};
     }
 
     function makeBooleanLiteral(type):S.Type {
@@ -241,7 +241,7 @@ function makeSerializer(tc:ts.TypeChecker) {
     }
 
     function makeNumberLiteral(type):S.Type {
-        return <any>{kind: TypeKind[TypeKind.NumberLiteral], value: Number(type.text)};
+        return <any>{kind: TypeKind[TypeKind.NumberLiteral], value: type.value};
     }
 
     function makeReference(type:ts.TypeReference, expectingClassConstructor?):S.ReferenceType {
@@ -300,7 +300,6 @@ function makeSerializer(tc:ts.TypeChecker) {
             resolvedReturnType: serializeType((sig as any).resolvedReturnType),
             minArgumentCount: (sig as any).minArgumentCount,
             hasRestParameter: (sig as any).hasRestParameter,
-            // TODO: Unsure if these still exists in 2.0
             target: (sig as any).target ? makeSignature((sig as any).target) : undefined,
             unionSignatures: (sig as any).unionSignatures ? (sig as any).unionSignatures.map(makeSignature) : [],
             isolatedSignatureType: (sig as any).isolatedSignatureType ? serializeType((sig as any).isolatedSignatureType) : undefined
@@ -693,8 +692,8 @@ function extractQualifiedDeclarations(program: ts.Program):QualifiedDeclarationW
             return QNameCache.get(decl);
         }
         var declName:string;
-        if (decl.name !== undefined) {
-            declName = getNameIdentifierText(decl.name);
+        if ((<any>decl).name !== undefined) {
+            declName = getNameIdentifierText((<any>decl).name);
         } else {
             declName = "";
         }
