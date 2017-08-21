@@ -115,31 +115,4 @@ public class ClassType implements Type {
         instance = result;
         return result;
     }
-
-    private InterfaceType instanceType = null;
-    public InterfaceType getInstanceType() {
-        if (this.instanceType != null) {
-            return this.instanceType;
-        }
-        this.instanceType = SpecReader.makeEmptySyntheticInterfaceType();
-        this.instanceType.setDeclaredNumberIndexType(this.declaredNumberIndexType);
-        this.instanceType.setDeclaredStringIndexType(this.declaredStringIndexType);
-        this.instanceType.setDeclaredProperties(this.instanceProperties);
-        this.instanceType.setTypeParameters(this.typeParameters);
-
-        this.instanceType.setBaseTypes(this.baseTypes.stream().map(baseType -> {
-            if (baseType instanceof ClassType) {
-                return ((ClassType) baseType).getInstanceType();
-            } else if (baseType instanceof ReferenceType && ((ReferenceType) baseType).getTarget() instanceof ClassType) {
-                ReferenceType result = new ReferenceType();
-                result.setTypeArguments(((ReferenceType) baseType).getTypeArguments());
-                result.setTarget(((ClassType) ((ReferenceType) baseType).getTarget()).getInstanceType());
-                return result;
-            } else {
-                return baseType;
-            }
-        }).collect(Collectors.toList()));
-
-        return this.instanceType;
-    }
 }
