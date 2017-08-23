@@ -354,7 +354,7 @@ function makeSerializer(tc:ts.TypeChecker) {
         };
         type.members.forEach(extractConstructor);
         type.symbol.members.forEach(extractConstructor);
-        const constructorSignatures = constructor ? constructor.declarations.map(makeConstructorSignature.bind(null, -1)) : [makeEmptyConstructorSignature(-1)];
+        const constructorSignatures = constructor ? constructor.declarations.map(makeConstructorSignature.bind(null, -1)) : [];
 
         var staticProperties = {};
 
