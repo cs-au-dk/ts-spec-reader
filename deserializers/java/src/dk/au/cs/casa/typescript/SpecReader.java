@@ -87,6 +87,23 @@ public class SpecReader {
         interfaceType.setTypeParameters(newList());
         return interfaceType;
     }
+    /**
+     * Convinience method for creting synthetic instances of the InterfaceType.
+     * Simplifies some implementation-cases.
+     */
+    public static GenericType makeEmptySyntheticGenericType() {
+        GenericType genericType = new GenericType();
+        genericType.setBaseTypes(newList());
+        genericType.setDeclaredCallSignatures(newList());
+        genericType.setDeclaredConstructSignatures(newList());
+        genericType.setDeclaredNumberIndexType(null);
+        genericType.setDeclaredProperties(newMap());
+        genericType.setDeclaredStringIndexType(null);
+        genericType.setTypeParameters(newList());
+        genericType.setTypeArguments(newList());
+        genericType.setTarget(genericType);
+        return genericType;
+    }
 
     private static <K, V> Map<K, V> newMap() {
         return new HashMap<>();
