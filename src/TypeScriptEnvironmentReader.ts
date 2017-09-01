@@ -641,6 +641,38 @@ function makeSerializer(tc:ts.TypeChecker) {
             }
         }
 
+        // ambient types with export =
+        if (type.symbol && type.symbol.exports && type.symbol.exports.get("export=" as any)) {
+            let exported = type.symbol.exports.get("export=" as any);
+            if (exported.declarations.length !== 1) {
+                throw new Error();
+            }
+            let declaration = exported.declarations[0];
+            if (!(declaration as any).expression) {
+                throw new Error();
+            }
+            let expressionType = tc.getTypeAtLocation((declaration as any).expression);
+
+            let locals = (type.symbol.declarations[0] as any).locals;
+            let exportTypeId = serializeType(expressionType, false);
+
+            let resultType = JSON.parse(JSON.stringify(serializations[exportTypeId])); // creating a copy, so i can copy the local properties over (see unit-test: ambient3 in TSTest).
+            let resultId = nextSerializationID++;
+            serializations[resultId] = resultType;
+
+            locals.forEach((value, key) => {
+                if (value.declarations.length !== 1) {
+                    throw new Error();
+                }
+                let propDeclaration = value.declarations[0];
+                let propType = tc.getTypeAtLocation(propDeclaration);
+                resultType.declaredProperties[key] = serializeType(propType, false);
+            });
+
+
+            return resultId;
+        }
+
         var isClass = type.flags == ts.TypeFlags.Object && (type as ts.ObjectType).objectFlags == (ts.ObjectFlags.Class + ts.ObjectFlags.Reference);
 
         var cacheKey = type;
@@ -789,7 +821,9 @@ function analyzeProgram(program:ts.Program):AnalysisResult {
 
     var ambientModules = declarations.filter(
             d => d.kind !== ts.SyntaxKind.InterfaceDeclaration && d.qName.length === 1 && d.qName[0][0] === "'"
-    ).map(serialize).map(decl => {
+    ).map(function (decl) {
+        return serialize(decl);
+    }).map(decl => {
         let name = decl.qName[0];
         return {
             qName: [name.substr(1, name.length -2)],
