@@ -2,8 +2,8 @@
 /// <reference path="../node_modules/typescript/lib/lib.es6.d.ts" />
 /// <reference path="../node_modules/typescript/lib/typescript.d.ts" />
 
-import ts = require("typescript");
-import util = require("util");
+import * as ts from "typescript";
+
 /**
  * Reads typescript files and extracts the environment they describe.
  *
@@ -831,6 +831,7 @@ function analyzeProgram(program:ts.Program):AnalysisResult {
         }
     });
 
+    const locationTypeMap = makeLocationTypeMap(serializer.serializeType, program);
 
 
     while(delayedOperations.length) {
@@ -841,6 +842,43 @@ function analyzeProgram(program:ts.Program):AnalysisResult {
         data: serializer.serializations,
         globals: globalProperties,
         types: types,
-        ambient: ambientModules
+        ambient: ambientModules,
+        locations: locationTypeMap
     }
+}
+
+function makeLocationTypeMap(serializeType: (type: ts.Type, expectingClassConstructor?: boolean) => S.SerializationID, program: ts.Program) {
+    const filesToLocations = {};
+    const sourceFiles = program.getSourceFiles();
+    for (let i = 0; i < sourceFiles.length; i++) {
+        let locationMap = {};
+        filesToLocations[sourceFiles[i].fileName] = locationMap;
+        findLocations(sourceFiles[i], (loc, type) => locationMap[loc] = type);
+    }
+
+    function findLocations(sourceFile: ts.SourceFile, cb: (loc: string, type: S.SerializationID) => void) {
+        delintNode(sourceFile);
+
+        function delintNode(node: ts.Node) {
+            const startLoc = sourceFile.getLineAndCharacterOfPosition(node.getStart());
+            const startLocString = startLoc.line + ":" + startLoc.character;
+
+            const endLoc = sourceFile.getLineAndCharacterOfPosition(node.getEnd());
+            const endLocString = endLoc.line + ":" + endLoc.character;
+
+            const locString = startLocString + "-" + endLocString;
+
+            try {
+                let type = program.getTypeChecker().getTypeAtLocation(node);
+                let serializedType = serializeType(type);
+                cb(locString, serializedType);
+            } catch (e) {
+                // some ast-nodes don't have a type, they crash.
+            }
+
+            ts.forEachChild(node, delintNode);
+        }
+    }
+
+    return filesToLocations;
 }

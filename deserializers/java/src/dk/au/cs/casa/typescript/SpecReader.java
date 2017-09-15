@@ -22,9 +22,9 @@ import java.util.Map;
 public class SpecReader {
 
     private final Type global;
-
     private final List<NamedType> namedTypes;
     private final List<NamedType> ambientTypes;
+    private final Map<String, Map<String, Type>> locations;
 
     /**
      * Reads a specification from a file.
@@ -55,7 +55,8 @@ public class SpecReader {
         InterfaceType global = makeEmptySyntheticInterfaceType();
         global.getDeclaredProperties().putAll(flattenTypeNameTree(spec.getGlobals()));
         this.global = global;
-        this.ambientTypes = spec.ambient;
+        this.ambientTypes = spec.getAmbient();
+        this.locations = spec.getLocations();
     }
 
     /**
@@ -125,6 +126,10 @@ public class SpecReader {
         return ambientTypes;
     }
 
+    public Map<String, Map<String, Type>> getLocations() {
+        return locations;
+    }
+
     private class SpecAdapter implements JsonDeserializer<Spec> {
         private final TypeResolver typeResolver;
 
@@ -162,7 +167,18 @@ public class SpecReader {
                 ambient.add(ctx.deserialize(ambientArr.get(i), NamedType.class));
             }
 
-            return new Spec(globals, types, ambient);
+            Map<String, Map<String, Type>> fileLocations = new HashMap<>();
+            JsonObject object = jsonObject.getAsJsonObject("locations");
+            for (Map.Entry<String, JsonElement> fileEntry : object.entrySet()) {
+                HashMap<String, Type> locations = new HashMap<>();
+                fileLocations.put(fileEntry.getKey(), locations);
+
+                for (Map.Entry<String, JsonElement> locationEntry : fileEntry.getValue().getAsJsonObject().entrySet()) {
+                    locations.put(locationEntry.getKey(), ctx.deserialize(locationEntry.getValue(), Type.class));
+                }
+            }
+
+            return new Spec(globals, types, ambient, fileLocations);
         }
 
         private Type deserializeUnresolvedType(JsonElement jsonElement, JsonDeserializationContext ctx) {
@@ -242,11 +258,13 @@ public class SpecReader {
         private List<NamedType> globals;
         private List<NamedType> types;
         private List<NamedType> ambient;
+        private Map<String, Map<String, Type>> locations;
 
-        public Spec(List<NamedType> globals, List<NamedType> types, List<NamedType> ambient) {
+        public Spec(List<NamedType> globals, List<NamedType> types, List<NamedType> ambient, Map<String, Map<String, Type>> locations) {
             this.globals = globals;
             this.types = types;
             this.ambient = ambient;
+            this.locations = locations;
         }
 
         @Override
@@ -256,6 +274,10 @@ public class SpecReader {
                     ", types=" + types +
                     ", ambient=" + ambient +
                     '}';
+        }
+
+        public Map<String, Map<String, Type>> getLocations() {
+            return locations;
         }
 
         public List<NamedType> getGlobals() {
