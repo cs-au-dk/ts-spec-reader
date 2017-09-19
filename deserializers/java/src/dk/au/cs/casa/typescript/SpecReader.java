@@ -24,7 +24,7 @@ public class SpecReader {
     private final Type global;
     private final List<NamedType> namedTypes;
     private final List<NamedType> ambientTypes;
-    private final Map<String, Map<String, Type>> locations;
+    private final Map<String, Map<String, ElementInfo>> locations;
 
     /**
      * Reads a specification from a file.
@@ -126,7 +126,7 @@ public class SpecReader {
         return ambientTypes;
     }
 
-    public Map<String, Map<String, Type>> getLocations() {
+    public Map<String, Map<String, ElementInfo>> getLocations() {
         return locations;
     }
 
@@ -167,14 +167,17 @@ public class SpecReader {
                 ambient.add(ctx.deserialize(ambientArr.get(i), NamedType.class));
             }
 
-            Map<String, Map<String, Type>> fileLocations = new HashMap<>();
+            Map<String, Map<String, ElementInfo>> fileLocations = new HashMap<>();
             JsonObject object = jsonObject.getAsJsonObject("locations");
             for (Map.Entry<String, JsonElement> fileEntry : object.entrySet()) {
-                HashMap<String, Type> locations = new HashMap<>();
+                HashMap<String, ElementInfo> locations = new HashMap<>();
                 fileLocations.put(fileEntry.getKey(), locations);
 
                 for (Map.Entry<String, JsonElement> locationEntry : fileEntry.getValue().getAsJsonObject().entrySet()) {
-                    locations.put(locationEntry.getKey(), ctx.deserialize(locationEntry.getValue(), Type.class));
+                    String elementKind = locationEntry.getValue().getAsJsonObject().get("kind").getAsString();
+                    Type typeInfo = ctx.deserialize(locationEntry.getValue().getAsJsonObject().get("type"), Type.class);
+                    String debug = locationEntry.getValue().getAsJsonObject().get("debug").getAsString();
+                    locations.put(locationEntry.getKey(), new ElementInfo(typeInfo, elementKind, debug));
                 }
             }
 
@@ -255,13 +258,34 @@ public class SpecReader {
         public List<String> qName;
     }
 
+    public static final class ElementInfo {
+        public Type type;
+        public String kind;
+        public String debug;
+
+        ElementInfo(Type type, String kind, String debug) {
+            this.type = type;
+            this.kind = kind;
+            this.debug = debug;
+        }
+
+        @Override
+        public String toString() {
+            return "ElementInfo{" +
+                    "type=" + type +
+                    ", kind='" + kind + '\'' +
+                    ", debug='" + debug + '\'' +
+                    '}';
+        }
+    }
+
     public static class Spec {
         private List<NamedType> globals;
         private List<NamedType> types;
         private List<NamedType> ambient;
-        private Map<String, Map<String, Type>> locations;
+        private Map<String, Map<String, ElementInfo>> locations;
 
-        public Spec(List<NamedType> globals, List<NamedType> types, List<NamedType> ambient, Map<String, Map<String, Type>> locations) {
+        public Spec(List<NamedType> globals, List<NamedType> types, List<NamedType> ambient, Map<String, Map<String, ElementInfo>> locations) {
             this.globals = globals;
             this.types = types;
             this.ambient = ambient;
@@ -277,7 +301,7 @@ public class SpecReader {
                     '}';
         }
 
-        public Map<String, Map<String, Type>> getLocations() {
+        public Map<String, Map<String, ElementInfo>> getLocations() {
             return locations;
         }
 

@@ -11,7 +11,7 @@ import * as ts from "typescript";
  * @returns AnalysisResult
  */
 export function readFiles(fileNames:string[]):AnalysisResult {
-    var program = ts.createProgram(fileNames, {module: ts.ModuleKind.CommonJS, strictNullChecks: true, noImplicitAny: true, noImplicitReturns: true, noImplicitThis: true, noLib: true, allowJs: true});
+    var program = ts.createProgram(fileNames, {module: ts.ModuleKind.CommonJS, strictNullChecks: true, noImplicitAny: true, noImplicitReturns: true, noImplicitThis: true, noLib: true, allowJs: true, checkJs: false});
 
     var allDiagnostics = ts.getPreEmitDiagnostics(program);
 
@@ -853,10 +853,10 @@ function makeLocationTypeMap(serializeType: (type: ts.Type, expectingClassConstr
     for (let i = 0; i < sourceFiles.length; i++) {
         let locationMap = {};
         filesToLocations[sourceFiles[i].fileName] = locationMap;
-        findLocations(sourceFiles[i], (loc, type) => locationMap[loc] = type);
+        findLocations(sourceFiles[i], (loc, type, astKind, debugHelp) => locationMap[loc] = {type: type, kind: astKind, debug: debugHelp})
     }
 
-    function findLocations(sourceFile: ts.SourceFile, cb: (loc: string, type: S.SerializationID) => void) {
+    function findLocations(sourceFile: ts.SourceFile, cb: (loc: string, type: S.SerializationID, astKind: string, debugHelp: string) => void) {
         delintNode(sourceFile);
 
         function delintNode(node: ts.Node) {
@@ -871,7 +871,7 @@ function makeLocationTypeMap(serializeType: (type: ts.Type, expectingClassConstr
             try {
                 let type = program.getTypeChecker().getTypeAtLocation(node);
                 let serializedType = serializeType(type);
-                cb(locString, serializedType);
+                cb(locString, serializedType, findEnumName(node.kind, ts.SyntaxKind), makeDebugInfo(node));
             } catch (e) {
                 // some ast-nodes don't have a type, they crash.
             }
@@ -883,9 +883,20 @@ function makeLocationTypeMap(serializeType: (type: ts.Type, expectingClassConstr
     return filesToLocations;
 }
 
+function makeDebugInfo(node: ts.Node): string {
+    let debug = "implement me";
+    switch (node.kind) {
+        case ts.SyntaxKind.VariableDeclaration:
+            debug = (<ts.VariableDeclaration>node).name.getText();
+            break;
+        default:
 
-function findEnumName(n: number, en) {
-    let kindName = `${n}: `;
+    }
+    return debug;
+}
+
+function findEnumName(n: number, en): string {
+    let kindName = "";
     kindName += Object.keys(en).find(name => ts.SyntaxKind[name] == n);
     return kindName;
-};
+}
