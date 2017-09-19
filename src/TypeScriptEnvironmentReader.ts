@@ -889,6 +889,9 @@ function makeDebugInfo(node: ts.Node): string {
         case ts.SyntaxKind.VariableDeclaration:
             debug = (<ts.VariableDeclaration>node).name.getText();
             break;
+        case ts.SyntaxKind.Identifier:
+            debug = (<ts.Identifier>node).text;
+            break;
         default:
 
     }
