@@ -11,7 +11,7 @@ import * as ts from "typescript";
  * @returns AnalysisResult
  */
 export function readFiles(fileNames:string[]):AnalysisResult {
-    var program = ts.createProgram(fileNames, {module: ts.ModuleKind.CommonJS, strictNullChecks: true, noImplicitAny: true, noImplicitReturns: true, noImplicitThis: true, noLib: true});
+    var program = ts.createProgram(fileNames, {module: ts.ModuleKind.CommonJS, strictNullChecks: true, noImplicitAny: true, noImplicitReturns: true, noImplicitThis: true, noLib: true, allowJs: true});
 
     var allDiagnostics = ts.getPreEmitDiagnostics(program);
 
@@ -621,7 +621,7 @@ function makeSerializer(tc:ts.TypeChecker) {
                 case ts.TypeFlags.Index:
                     return makeIndex(type as ts.IndexType);
                 default:
-                    throw new Error("Unhandled type case: " + type.flags);
+                    console.log("ERROR: Unhandled type case: " + findEnumName(type.flags, ts.TypeFlags.NonPrimitive));
             }
         }
 
@@ -755,7 +755,7 @@ function extractQualifiedDeclarations(program: ts.Program):QualifiedDeclarationW
                     qualifier = undefined;
                     break;
                 default:
-                    throw new Error("Unhandled QName path element: " + "kind = " + parent.kind);
+                    console.log("WARNING: Unhandled QName path element: " + "kind = " + findEnumName(parent.kind, ts.SyntaxKind));
             }
             if (qualifier !== undefined) {
                 qName.push(qualifier);
@@ -882,3 +882,10 @@ function makeLocationTypeMap(serializeType: (type: ts.Type, expectingClassConstr
 
     return filesToLocations;
 }
+
+
+function findEnumName(n: number, en) {
+    let kindName = `${n}: `;
+    kindName += Object.keys(en).find(name => ts.SyntaxKind[name] == n);
+    return kindName;
+};

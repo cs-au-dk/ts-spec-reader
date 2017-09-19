@@ -182,6 +182,7 @@ public class SpecReader {
         }
 
         private Type deserializeUnresolvedType(JsonElement jsonElement, JsonDeserializationContext ctx) {
+            if(jsonElement.isJsonNull()) return null;
 
             JsonObject object = jsonElement.getAsJsonObject();
             TypeKind kind = TypeKind.valueOf(object.get("kind").getAsString());

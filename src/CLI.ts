@@ -1,10 +1,8 @@
 /// <reference path="../typings/node/node.d.ts" />
-
 if (typeof Map === 'undefined' || typeof Set === 'undefined') {
     console.error("Map and Set missing. Run node with --harmony.");
     process.exit(1);
 }
-
 
 import Reader = require('./TypeScriptEnvironmentReader');
 
