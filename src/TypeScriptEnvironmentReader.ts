@@ -844,7 +844,7 @@ function analyzeProgram(program:ts.Program):AnalysisResult {
         types: types,
         ambient: ambientModules,
         locations: locationTypeMap
-    }
+    } as any;
 }
 
 function makeLocationTypeMap(serializeType: (type: ts.Type, expectingClassConstructor?: boolean) => S.SerializationID, program: ts.Program) {

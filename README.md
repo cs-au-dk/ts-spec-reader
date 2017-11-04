@@ -6,7 +6,7 @@ Reads TypeScript-types by hooking into the TypeScript compiler, emits a single j
 ```
 
     $ npm i
-    $ node_modules/.bin/tsc --module commonjs src/*.ts
+    $ node_modules/.bin/tsc
     # bunch of type error warnings (need proper build script), but .js files will be created
     $ node src/CLI.js --help   
     

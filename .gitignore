@@ -1,11 +1,18 @@
 # Mac OS thumbnails
 .DS_Store
 
+# lock files
+package-lock.json
+yarn.lock
+
 # Gradle build directory
 build/
 
 # Gradle 
 .gradle
+
+# out folder
+out/
 
 node_modules/*
 src/CLI.js
