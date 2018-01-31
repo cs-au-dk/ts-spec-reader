@@ -470,10 +470,15 @@ function makeSerializer(tc:ts.TypeChecker) {
         };
     }
 
-    var makeAnonymousInterface = function (type: ts.Type): S.InterfaceType {
+    var makeAnonymousInterface = function (type: ts.Type): S.InterfaceType | S.ReferenceType {
+        const rType = type as any;
+        // If it is actually a type-alias.
         // ts.ResolvedType actually exists inside tsserverlibrary.d.ts, it seems to follow the type we are using below.
-        var rType: any = type;
-        return {
+        if (rType.target && type.aliasSymbol && type.aliasTypeArguments && type.aliasTypeArguments.length) {
+            rType.typeArguments = type.aliasTypeArguments;
+            return makeReference(rType);
+        }
+        const result = <any>{
             kind: TypeKind[TypeKind.Interface],
             typeParameters: [],
             baseTypes: [],
@@ -483,6 +488,17 @@ function makeSerializer(tc:ts.TypeChecker) {
             declaredStringIndexType: serializeType(rType.stringIndexInfo && rType.stringIndexInfo.type),
             declaredNumberIndexType: serializeType(rType.numberIndexInfo && rType.numberIndexInfo.type)
         };
+
+        // If it is actually a type-alias part 2.
+        if (type.aliasSymbol && rType.aliasSymbol.declarations[0].typeParameters) {
+            const typeParameters = rType.aliasSymbol.declarations[0].typeParameters.map(function (type) { return serializeType(tc.getTypeAtLocation(type)); });
+            result.typeParameters = typeParameters;
+            result.kind = TypeKind[TypeKind.Generic];
+            result.target = serializeType(type);
+            result.typeArguments = typeParameters;
+        }
+
+        return result;
     };
 
     /**
