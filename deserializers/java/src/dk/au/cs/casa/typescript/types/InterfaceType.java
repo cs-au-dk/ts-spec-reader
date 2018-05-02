@@ -7,6 +7,7 @@ public class InterfaceType implements Type {
     private List<Type> typeParameters;
     private List<Type> baseTypes;
     private Map<String, Type> declaredProperties;
+    private List<String> readonlyDeclarations;
     private List<Signature> declaredCallSignatures;
     private List<Signature> declaredConstructSignatures;
     private Type declaredStringIndexType;
@@ -35,6 +36,14 @@ public class InterfaceType implements Type {
 
     public void setDeclaredConstructSignatures(List<Signature> declaredConstructSignatures) {
         this.declaredConstructSignatures = declaredConstructSignatures;
+    }
+
+    public List<String> getReadonlyDeclarations() {
+        return readonlyDeclarations;
+    }
+
+    public void setReadonlyDeclarations(List<String> readonlyDeclarations) {
+        this.readonlyDeclarations = readonlyDeclarations;
     }
 
     public List<Signature> getDeclaredCallSignatures() {

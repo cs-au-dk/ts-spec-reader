@@ -32,6 +32,24 @@ public class ClassType implements Type {
     private Type target;
     private List<Type> typeParameters;
     private List<Type> typeArguments;
+    private List<String> staticReadonlyProperties;
+    private List<String> instanceReadOnlyProperties;
+
+    public List<String> getStaticReadonlyProperties() {
+        return staticReadonlyProperties;
+    }
+
+    public void setStaticReadonlyProperties(List<String> staticReadonlyProperties) {
+        this.staticReadonlyProperties = staticReadonlyProperties;
+    }
+
+    public List<String> getInstanceReadOnlyProperties() {
+        return instanceReadOnlyProperties;
+    }
+
+    public void setInstanceReadOnlyProperties(List<String> instanceReadOnlyProperties) {
+        this.instanceReadOnlyProperties = instanceReadOnlyProperties;
+    }
 
     public List<Signature> getSignatures() {
         return signatures;

@@ -100,6 +100,7 @@ export declare module S {
         typeParameters: SerializationID[]
         baseTypes: SerializationID[]
         declaredProperties: {[name:string]: S.SerializationID}
+        readonlyDeclarations: string[]
         declaredCallSignatures: Signature[]
         declaredConstructSignatures: Signature[]
         declaredStringIndexType: SerializationID
@@ -357,6 +358,7 @@ function makeSerializer(tc:ts.TypeChecker) {
         const constructorSignatures = constructor ? constructor.declarations.map(makeConstructorSignature.bind(null, -1)) : [];
 
         var staticProperties = {};
+        var staticReadonlyProperties = [];
 
         type.symbol.exports.forEach(function (staticType) {
             var name = staticType.name;
@@ -367,6 +369,13 @@ function makeSerializer(tc:ts.TypeChecker) {
                 var isClassDeclaration = !(staticType.valueDeclaration.type);
                 var isTypeOf = !!(staticType.valueDeclaration.type && staticType.valueDeclaration.type.exprName);
                 staticProperties[name] = serializeType(tc.getTypeAtLocation(staticType.valueDeclaration), isClassDeclaration || isTypeOf);
+                if (staticType.valueDeclaration.modifiers) {
+                    for (let i = 0; i < staticType.valueDeclaration.modifiers.length; i++) {
+                        if (staticType.valueDeclaration.modifiers[i].kind === ts.SyntaxKind.ReadonlyKeyword) {
+                            staticReadonlyProperties.push(name);
+                        }
+                    }
+                }
             }
         });
 
@@ -376,6 +385,8 @@ function makeSerializer(tc:ts.TypeChecker) {
         const referencePart = makeReference(type);
 
         const instanceProperties:{[name:string]: S.SerializationID} = makeProperties(type.declaredProperties);
+        const instanceReadOnlyProperties = findReadonlyDeclarations(type.declaredProperties);
+
 
         const baseTypes:S.SerializationID[] = type.resolvedBaseTypes.map((type) => serializeType(type, true));
 
@@ -391,23 +402,46 @@ function makeSerializer(tc:ts.TypeChecker) {
             declaredNumberIndexType: declaredNumberIndexType,
             target: referencePart.target,
             typeParameters: typeParameters,
-            typeArguments: referencePart.typeArguments
+            typeArguments: referencePart.typeArguments,
+            staticReadonlyProperties: staticReadonlyProperties,
+            instanceReadOnlyProperties: instanceReadOnlyProperties
         };
     }
 
+
+    function findReadonlyDeclarations(declaredProperties) {
+        return declaredProperties.filter(function (prop) {
+            var modifiers = prop.valueDeclaration.modifiers;
+            if (!modifiers) {
+                return false;
+            }
+            for (var i = 0; i < modifiers.length; i++) {
+                var modifier = modifiers[i];
+                if (modifier.kind === ts.SyntaxKind.ReadonlyKeyword) {
+                    return true;
+                }
+            }
+            return false;
+        }).map(function (prop) {
+            return prop.getName();
+        });
+    }
+
     function makeInterface(type:ts.InterfaceTypeWithDeclaredMembers):S.InterfaceType {
-        var typeParameters:S.SerializationID[] = type.typeParameters ? type.typeParameters.map((type) => serializeType(type)) : [];
-        var baseTypes:S.SerializationID[] = (type as any).resolvedBaseTypes.map((type) => serializeType(type));
-        var declaredProperties:{[name:string]: S.SerializationID} = makeProperties(type.declaredProperties);
-        var declaredCallSignatures:S.Signature[] = type.declaredCallSignatures.map(makeSignature);
-        var declaredConstructSignatures:S.Signature[] = type.declaredConstructSignatures.map(makeSignature);
-        var declaredStringIndexType = serializeType(type.declaredStringIndexInfo && type.declaredStringIndexInfo.type);
-        var declaredNumberIndexType = serializeType(type.declaredNumberIndexInfo && type.declaredNumberIndexInfo.type);
+        const typeParameters:S.SerializationID[] = type.typeParameters ? type.typeParameters.map((type) => serializeType(type)) : [];
+        const baseTypes:S.SerializationID[] = (type as any).resolvedBaseTypes.map((type) => serializeType(type));
+        const declaredProperties:{[name:string]: S.SerializationID} = makeProperties(type.declaredProperties);
+        const readonlyDeclarations = findReadonlyDeclarations(type.declaredProperties);
+        const declaredCallSignatures:S.Signature[] = type.declaredCallSignatures.map(makeSignature);
+        const declaredConstructSignatures:S.Signature[] = type.declaredConstructSignatures.map(makeSignature);
+        const declaredStringIndexType = serializeType(type.declaredStringIndexInfo && type.declaredStringIndexInfo.type);
+        const declaredNumberIndexType = serializeType(type.declaredNumberIndexInfo && type.declaredNumberIndexInfo.type);
         return {
             kind: TypeKind[TypeKind.Interface],
             typeParameters: typeParameters,
             baseTypes: baseTypes,
             declaredProperties: declaredProperties,
+            readonlyDeclarations: readonlyDeclarations,
             declaredCallSignatures: declaredCallSignatures,
             declaredConstructSignatures: declaredConstructSignatures,
             declaredStringIndexType: declaredStringIndexType,
@@ -416,8 +450,8 @@ function makeSerializer(tc:ts.TypeChecker) {
     }
 
     function makeGeneric(type:ts.GenericType):S.Type {
-        var interfacePart = makeInterface(type as any);
-        var referencePart = makeReference(type);
+        const interfacePart = makeInterface(type as any);
+        const referencePart = makeReference(type);
         return <any>{
             kind: TypeKind[TypeKind.Generic],
             typeParameters: interfacePart.typeParameters,
@@ -443,7 +477,7 @@ function makeSerializer(tc:ts.TypeChecker) {
     function makeTypeParameter(type:ts.TypeParameter):S.Type {
         return <any>{
             kind: TypeKind[TypeKind.TypeParameter],
-            constraint: serializeType(type.constraint)
+            constraint: serializeType((type as any).constraint)
         };
     }
 
