@@ -5,6 +5,12 @@ import java.util.List;
 public class UnionType implements Type {
     private List<Type> elements;
 
+    public UnionType() {}
+
+    public UnionType(List<Type> elements) {
+        this.elements = elements;
+    }
+
     public List<Type> getElements() {
         return elements;
     }

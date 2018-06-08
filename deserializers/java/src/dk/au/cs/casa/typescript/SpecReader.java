@@ -59,6 +59,13 @@ public class SpecReader {
         this.locations = spec.getLocations();
     }
 
+    public SpecReader(Type global, List<NamedType> namedTypes, List<NamedType> ambientTypes, Map<String, Map<String, ElementInfo>> locations) {
+        this.global = global;
+        this.namedTypes = namedTypes;
+        this.ambientTypes = ambientTypes;
+        this.locations = locations;
+    }
+
     /**
      * Flattens a tree already flat tree. Exceptions will be thrown if the tree is not flat...
      */
@@ -256,6 +263,13 @@ public class SpecReader {
     public static final class NamedType {
         public Type type;
         public List<String> qName;
+
+        public NamedType() {}
+
+        public NamedType(Type type, List<String> qName) {
+            this.type = type;
+            this.qName = qName;
+        }
     }
 
     public static final class ElementInfo {
