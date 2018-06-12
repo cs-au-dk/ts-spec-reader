@@ -38,4 +38,8 @@ public interface TypeVisitorWithArgument<T, A> {
     T visit(IndexType t, A a);
 
     T visit(IndexedAccessType t, A a);
+
+    default T visit(DelayedType t, A a) {
+        throw new RuntimeException();
+    }
 }

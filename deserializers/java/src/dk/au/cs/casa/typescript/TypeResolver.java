@@ -5,12 +5,13 @@ import dk.au.cs.casa.typescript.types.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
  * Registers type by unique IDs and replaces the IDs with real types later.
  */
-class TypeResolver {
+public class TypeResolver {
     private boolean resolved = false;
     private Map<Integer, Type> typeIdMap = new HashMap<>();
 
@@ -39,7 +40,15 @@ class TypeResolver {
             throw new RuntimeException("Already fully resolved?!?");
         }
         resolved = true;
-        TypeVisitor<Void> v = new ResolverVisitor();
+        TypeVisitor<Void> v = new ResolverVisitor(t -> {
+            if (t instanceof UnresolvedType) {
+                return typeIdMap.get(((UnresolvedType) t).getId());
+            } else if (t instanceof DelayedType) {
+                return ((DelayedType) t).getType();
+            } else {
+                return t;
+            }
+        });
         typeIdMap.forEach((key, value) -> {
             try {
                 value.accept(v);
@@ -52,7 +61,12 @@ class TypeResolver {
     /**
      * Replaces UnresolvedType values in all fields of a type.
      */
-    private class ResolverVisitor implements TypeVisitor<Void> {
+    public static final class ResolverVisitor implements TypeVisitor<Void> {
+        final Function<Type, Type> mapper;
+
+        public ResolverVisitor(Function<Type, Type> mapper) {
+            this.mapper = mapper;
+        }
 
         @Override
         public Void visit(AnonymousType t) {
@@ -100,13 +114,9 @@ class TypeResolver {
 
         private void visit(Signature signature) {
             signature.getParameters().forEach(p -> {
-                if (p.getType() instanceof UnresolvedType) {
-                    p.setType(map(p.getType()));
-                }
+                p.setType(map(p.getType()));
             });
-            if (signature.getResolvedReturnType() instanceof UnresolvedType) {
-                signature.setResolvedReturnType(map(signature.getResolvedReturnType()));
-            }
+            signature.setResolvedReturnType(map(signature.getResolvedReturnType()));
 
             if (signature.getTarget() != null && signature.getTarget() != signature) {
                 visit(signature.getTarget());
@@ -120,11 +130,7 @@ class TypeResolver {
         }
 
         private Type map(Type t) {
-            if (t instanceof UnresolvedType) {
-                return typeIdMap.get(((UnresolvedType) t).getId());
-            } else {
-                throw new RuntimeException("Expected only UnresolvedType here?! (" + t.getClass() + ")");
-            }
+            return mapper.apply(t);
         }
 
         @Override

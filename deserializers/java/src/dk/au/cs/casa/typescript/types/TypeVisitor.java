@@ -38,4 +38,8 @@ public interface TypeVisitor<T> {
     T visit(IndexType t);
 
     T visit(IndexedAccessType t);
+
+    default T visit(DelayedType delayedType) {
+        throw new RuntimeException();
+    }
 }
