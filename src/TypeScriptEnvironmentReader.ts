@@ -564,6 +564,7 @@ function makeSerializer(tc:ts.TypeChecker) {
                     return makeNumber();
                 case ts.TypeFlags.Boolean:
                 case ts.TypeFlags.Boolean | ts.TypeFlags.Union: // No idea why it happens, but it does (and from what I've seen, it is just a boolean).
+                case ts.TypeFlags.Union + (ts.TypeFlags as any).UnionOfUnitTypes + ts.TypeFlags.Boolean:
                     return makeBoolean();
                 case ts.TypeFlags.Void:
                     return makeVoid();
@@ -648,6 +649,7 @@ function makeSerializer(tc:ts.TypeChecker) {
                             throw new Error("Unhandled objectFlags case: " + type.objectFlags);
                     }
                 case ts.TypeFlags.Union:
+                case ts.TypeFlags.Union + (ts.TypeFlags as any).UnionOfUnitTypes:
                     return makeUnion(<ts.UnionType>type);
                 case ts.TypeFlags.ESSymbol:
                     return makeSymbol();
