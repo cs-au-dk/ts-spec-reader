@@ -40,11 +40,11 @@ class TypeResolver {
         }
         resolved = true;
         TypeVisitor<Void> v = new ResolverVisitor();
-        typeIdMap.entrySet().forEach(t -> {
+        typeIdMap.forEach((key, value) -> {
             try {
-                t.getValue().accept(v);
+                value.accept(v);
             } catch (NullPointerException e) {
-                System.out.println("NullPointerException at id " + t.getKey() + " / type: " + t.getValue());
+                System.out.println("NullPointerException at id " + key + " / type: " + value);
             }
         });
     }
