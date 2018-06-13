@@ -22,9 +22,9 @@ public class DelayedType implements Type {
     public Type getType() {
         if (type == null) {
             type = generator.get();
-        }
-        while (type instanceof DelayedType) {
-            type = ((DelayedType) type).getType();
+            while (type instanceof DelayedType) {
+                type = ((DelayedType) type).getType();
+            }
         }
         return type;
     }
