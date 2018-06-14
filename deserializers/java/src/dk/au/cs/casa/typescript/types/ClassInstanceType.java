@@ -3,6 +3,12 @@ package dk.au.cs.casa.typescript.types;
 public class ClassInstanceType implements Type {
     private Type classType;
 
+    public ClassInstanceType() {}
+
+    public ClassInstanceType(Type classType) {
+        this.classType = classType;
+    }
+
     @Override
     public <T> T accept(TypeVisitor<T> v) {
         return v.visit(this);
