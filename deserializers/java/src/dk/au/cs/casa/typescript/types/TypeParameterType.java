@@ -8,7 +8,6 @@ public class TypeParameterType implements Type {
     }
 
     public void setConstraint(Type constraint) {
-
         this.constraint = constraint;
     }
 
