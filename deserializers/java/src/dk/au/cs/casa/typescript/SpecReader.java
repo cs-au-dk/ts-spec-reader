@@ -89,6 +89,7 @@ public class SpecReader {
         interfaceType.setBaseTypes(newList());
         interfaceType.setDeclaredCallSignatures(newList());
         interfaceType.setDeclaredConstructSignatures(newList());
+        interfaceType.setReadonlyDeclarations(newList());
         interfaceType.setDeclaredNumberIndexType(null);
         interfaceType.setDeclaredProperties(newMap());
         interfaceType.setDeclaredStringIndexType(null);
