@@ -7,6 +7,12 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public class ClassType implements Type {
+    private static int counter = 0;
+    private int count = counter++;
+
+    public ClassType() {
+
+    }
 
     @Override
     public String toString() {
