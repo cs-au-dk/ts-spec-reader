@@ -75,7 +75,8 @@ public class TypeResolver {
 
         @Override
         public Void visit(ClassType t) {
-            visit(t.getSignatures());
+            visit(t.getConstructors());
+            visit(t.getCallSignatures());
             t.setBaseTypes(map(t.getBaseTypes()));
             t.setInstanceProperties(mapMap(t.getInstanceProperties()));
             t.setStaticProperties(mapMap(t.getStaticProperties()));

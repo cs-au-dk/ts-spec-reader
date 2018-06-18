@@ -1,19 +1,9 @@
 package dk.au.cs.casa.typescript.types;
 
-import dk.au.cs.casa.typescript.SpecReader;
-
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 public class ClassType implements Type {
-    private static int counter = 0;
-    private int count = counter++;
-
-    public ClassType() {
-
-    }
-
     @Override
     public String toString() {
         return "Class(" + instanceProperties.keySet() + ")";
@@ -29,7 +19,8 @@ public class ClassType implements Type {
         return v.visit(this, a);
     }
 
-    private List<Signature> signatures;
+    private List<Signature> constructors; // <- constructors
+    private List<Signature> callSignatures; // <- non-constructor interfaces.
     private List<Type> baseTypes;
     private Map<String, Type> staticProperties;
     private Map<String, Type> instanceProperties;
@@ -57,12 +48,20 @@ public class ClassType implements Type {
         this.instanceReadOnlyProperties = instanceReadOnlyProperties;
     }
 
-    public List<Signature> getSignatures() {
-        return signatures;
+    public List<Signature> getConstructors() {
+        return constructors;
     }
 
-    public void setSignatures(List<Signature> signatures) {
-        this.signatures = signatures;
+    public void setConstructors(List<Signature> constructors) {
+        this.constructors = constructors;
+    }
+
+    public List<Signature> getCallSignatures() {
+        return callSignatures;
+    }
+
+    public void setCallSignatures(List<Signature> callSignatures) {
+        this.callSignatures = callSignatures;
     }
 
     public List<Type> getBaseTypes() {

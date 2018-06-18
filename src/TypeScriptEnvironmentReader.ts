@@ -394,7 +394,8 @@ function makeSerializer(tc:ts.TypeChecker) {
 
         return {
             kind: TypeKind[TypeKind.Class],
-            signatures: constructorSignatures,
+            constructors: constructorSignatures,
+            callSignatures: [], // <- FaceBook flow supports classes having call-signatures (without the new keyword). To have compatible API, this empty array is added.
             baseTypes: baseTypes,
             staticProperties: staticProperties,
             instanceProperties: instanceProperties,
