@@ -673,6 +673,10 @@ function makeSerializer(tc:ts.TypeChecker) {
                     throw new Error("Unhandled non-primitive: " + type.intrinsicName);
                 case ts.TypeFlags.Index:
                     return makeIndex(type as ts.IndexType);
+                case ts.TypeFlags.Conditional:
+                    return makeType(type.resolvedBaseConstraint, id); // Wrong, but OK as long as no declaration uses this feature.
+                case ts.TypeFlags.Substitution:
+                    return makeType(type.resolvedBaseConstraint, id); // Wrong, but OK as long as no declaration uses this feature.
                 default:
                     console.log("ERROR: Unhandled type case: " + findEnumName(type.flags, ts.TypeFlags.NonPrimitive));
             }
