@@ -54,6 +54,13 @@ switch (env) {
 
 targets = targets.concat(program.args);
 
+for (let i = 0; i < targets.length; i++) {
+    let target = targets[i];
+    if (target.startsWith("\"") && target.endsWith("\"")) {
+        targets[i] = target.substring(1, target.length - 1);
+    }
+}
+
 console.log("Reading files: " + targets);
 
 var result = Reader.readFiles(targets);
