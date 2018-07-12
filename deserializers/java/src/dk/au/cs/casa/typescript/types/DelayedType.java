@@ -21,10 +21,11 @@ public class DelayedType implements Type {
 
     public Type getType() {
         if (type == null) {
-            type = generator.get();
-            while (type instanceof DelayedType) {
-                type = ((DelayedType) type).getType();
+            Type newType = generator.get();
+            while (newType instanceof DelayedType) {
+                newType = ((DelayedType) newType).getType();
             }
+            type = newType;
         }
         return type;
     }
