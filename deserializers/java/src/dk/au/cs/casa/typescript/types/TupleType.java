@@ -4,6 +4,7 @@ import java.util.List;
 
 public class TupleType implements Type {
     private List<Type> elementTypes;
+    private int minLength;
 
     @Override
     public <T> T accept(TypeVisitor<T> v) {
@@ -28,5 +29,13 @@ public class TupleType implements Type {
 
     public void setElementTypes(List<Type> elementTypes) {
         this.elementTypes = elementTypes;
+    }
+
+    public int getMinLength() {
+        return minLength;
+    }
+
+    public void setMinLength(int minLength) {
+        this.minLength = minLength;
     }
 }

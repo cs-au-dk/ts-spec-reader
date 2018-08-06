@@ -467,9 +467,9 @@ function makeSerializer(tc:ts.TypeChecker) {
         };
     }
 
-    // In TypeScript 2, a tuple is an array of type parameters. Meaning that any tuple of the same length can share type, they just have different parameters.
     function makeTuple(type:ts.GenericType):S.Type {
         return <any>{
+            minLength: (type as any).minLength,
             kind: TypeKind[TypeKind.Tuple],
             elementTypes: type.typeParameters.map(e => serializeType(e))
         }
