@@ -6,7 +6,7 @@
     "typescript": "=3.0.1"
   },
   "scripts": {
-    "compile": "tsc --module commonjs src/*.ts"
+    "compile": "tsc --module commonjs src/CLI.ts src/TypeScriptEnvironmentReader.ts"
   },
   "devDependencies": {
     "mocha": "=2.2.4"
