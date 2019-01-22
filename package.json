@@ -5,6 +5,9 @@
     "commander": "=2.8.1",
     "typescript": "=3.0.1"
   },
+  "scripts": {
+    "compile": "tsc --module commonjs src/*.ts"
+  },
   "devDependencies": {
     "mocha": "=2.2.4"
   },
