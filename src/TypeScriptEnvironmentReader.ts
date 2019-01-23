@@ -888,7 +888,7 @@ function analyzeProgram(program:ts.Program):AnalysisResult {
         }
     });
 
-    const locationTypeMap = makeLocationTypeMap(serializer.serializeType, program);
+    const locationTypeMap = {};//makeLocationTypeMap(serializer.serializeType, program);
 
 
     while(delayedOperations.length) {
