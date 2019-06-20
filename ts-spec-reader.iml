@@ -8,6 +8,9 @@
       <sourceFolder url="file://$MODULE_DIR$/test/fixtures" type="java-test-resource" />
       <sourceFolder url="file://$MODULE_DIR$/deserializers/java/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/deserializers/java/test" isTestSource="true" />
+      <excludeFolder url="file://$MODULE_DIR$/.gradle" />
+      <excludeFolder url="file://$MODULE_DIR$/build" />
+      <excludeFolder url="file://$MODULE_DIR$/out" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
